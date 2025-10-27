@@ -31,7 +31,7 @@ Install the skill globally to use it across all your projects:
 cd ~/.claude/skills/
 
 # Clone the skill repository
-git clone https://github.com/yourusername/jira-ticket-estimator.git
+git clone https://github.com/kennyth01/jira-ticket-estimator.git
 
 # Verify installation
 ls -la ~/.claude/skills/jira-ticket-estimator
@@ -50,7 +50,7 @@ mkdir -p .claude/skills
 
 # Clone the skill repository
 cd .claude/skills
-git clone https://github.com/yourusername/jira-ticket-estimator.git
+git clone https://github.com/kennyth01/jira-ticket-estimator.git
 
 # Verify installation
 ls -la .claude/skills/jira-ticket-estimator
