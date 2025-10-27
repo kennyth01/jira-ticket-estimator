@@ -1,0 +1,880 @@
+{
+  "estimation_config": {
+    "version": "3.1",
+    "description": "Comprehensive estimation configuration based on task type classification and complexity scoring, with configurable manual workflow phases by project type",
+
+    "project_types": {
+      "monolithic": {
+        "label": "Monolithic Application",
+        "description": "Traditional monolithic architecture (e.g., Laravel, Rails, Django)",
+        "workflow_phases": {
+          "planning_design": {
+            "label": "Planning & Design",
+            "description": "Architecture planning, database schema design, API contracts",
+            "base_minutes_at_complexity_5": 90,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Implementation",
+            "description": "Writing code, controllers, models, views, database migrations",
+            "base_minutes_at_complexity_5": 360,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "self_review": {
+            "label": "Self Review",
+            "description": "Review your own code for bugs, edge cases, code quality before testing",
+            "base_minutes": 30,
+            "scales_with_complexity": false
+          },
+          "testing": {
+            "label": "Testing",
+            "description": "Writing unit tests, integration tests, manual testing",
+            "percentage_of_implementation": 40,
+            "min_minutes": 20,
+            "max_minutes": 480
+          },
+          "code_review": {
+            "label": "Code Review & Revisions",
+            "description": "Peer review, addressing feedback, revisions",
+            "base_minutes_at_complexity_5": 45,
+            "min_minutes": 30,
+            "max_minutes": 120,
+            "scales_with_complexity": true
+          },
+          "deployment_verification": {
+            "label": "Deployment to Test + Verification",
+            "description": "Deploy to test environment, smoke tests, verification",
+            "base_minutes": 60,
+            "infrastructure_changes_minutes": 80,
+            "scales_with_complexity": false
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_planning": {
+            "label": "AI Planning",
+            "description": "AI generates architecture plan, schema, API contracts",
+            "time_savings_percentage": 70,
+            "base_on_manual_phase": "planning_design"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates code, migrations, controllers, models",
+            "time_savings_percentage": 65,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_review": {
+            "label": "AI Review",
+            "description": "AI reviews generated code for bugs, edge cases, improvements",
+            "base_minutes": 10,
+            "scales_with_complexity": false
+          },
+          "human_review_testing": {
+            "label": "Human Review & Testing",
+            "description": "Human validates AI output, writes/runs tests, validates functionality",
+            "manual_phase_testing_percentage": 60,
+            "manual_phase_self_review_percentage": 100,
+            "notes": "Takes 100% of manual self_review + 60% of manual testing time"
+          },
+          "iterations": {
+            "label": "Iterations & Vibe Coding",
+            "description": "Fix AI mistakes, regenerate code, refine prompts, adjust implementation",
+            "base_minutes_at_complexity_5": 25,
+            "min_minutes": 10,
+            "max_minutes": 90,
+            "scales_with_complexity": true
+          },
+          "deploy_test": {
+            "label": "Deploy to Test",
+            "description": "Deploy to test environment",
+            "time_savings_percentage": 0,
+            "base_on_manual_phase": "deployment_verification",
+            "notes": "Same as manual - deployment time doesn't change"
+          },
+          "test_verification": {
+            "label": "Test Verification",
+            "description": "Smoke tests, end-to-end verification, validation",
+            "base_minutes": 20,
+            "infrastructure_changes_minutes": 30,
+            "scales_with_complexity": false
+          }
+        }
+      },
+      "serverless": {
+        "label": "Serverless Architecture",
+        "description": "Serverless/microservices architecture (e.g., AWS Lambda, Cloud Functions)",
+        "workflow_phases": {
+          "planning_design": {
+            "label": "Planning & Design",
+            "description": "Event design, IAM permissions, API Gateway setup, infrastructure as code",
+            "base_minutes_at_complexity_5": 120,
+            "min_minutes": 20,
+            "max_minutes": 240,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Implementation",
+            "description": "Writing Lambda handlers, infrastructure code (CDK/SAM/Terraform)",
+            "base_minutes_at_complexity_5": 270,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "self_review": {
+            "label": "Self Review",
+            "description": "Review your own code for bugs, IAM permissions, edge cases before testing",
+            "base_minutes": 30,
+            "scales_with_complexity": false
+          },
+          "testing": {
+            "label": "Testing",
+            "description": "Unit tests, integration tests, local invoke testing",
+            "percentage_of_implementation": 35,
+            "min_minutes": 30,
+            "max_minutes": 360
+          },
+          "code_review": {
+            "label": "Code Review & Revisions",
+            "description": "Peer review, security review, addressing feedback",
+            "base_minutes_at_complexity_5": 40,
+            "min_minutes": 15,
+            "max_minutes": 90,
+            "scales_with_complexity": true
+          },
+          "deployment_verification": {
+            "label": "Deployment to Test + Verification",
+            "description": "Deploy via CI/CD, CloudWatch monitoring, API testing",
+            "base_minutes": 45,
+            "infrastructure_changes_minutes": 90,
+            "scales_with_complexity": false
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_planning": {
+            "label": "AI Planning",
+            "description": "AI generates infrastructure design, Lambda structure, IAM policies",
+            "time_savings_percentage": 65,
+            "base_on_manual_phase": "planning_design"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates Lambda handlers, IaC code (CDK/SAM/Terraform)",
+            "time_savings_percentage": 60,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_review": {
+            "label": "AI Review",
+            "description": "AI reviews code for security, IAM permissions, best practices",
+            "base_minutes": 12,
+            "scales_with_complexity": false
+          },
+          "human_review_testing": {
+            "label": "Human Review & Testing",
+            "description": "Human validates IaC, tests Lambda locally, validates integrations",
+            "manual_phase_testing_percentage": 65,
+            "manual_phase_self_review_percentage": 100,
+            "notes": "Takes 100% of manual self_review + 65% of manual testing (IaC needs careful validation)"
+          },
+          "iterations": {
+            "label": "Iterations & Vibe Coding",
+            "description": "Fix IAM issues, adjust Lambda config, refine infrastructure code",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 120,
+            "scales_with_complexity": true
+          },
+          "deploy_test": {
+            "label": "Deploy to Test",
+            "description": "Deploy via CI/CD",
+            "time_savings_percentage": 0,
+            "base_on_manual_phase": "deployment_verification",
+            "notes": "Same as manual - deployment time doesn't change"
+          },
+          "test_verification": {
+            "label": "Test Verification",
+            "description": "CloudWatch logs, API testing, integration validation",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 45,
+            "scales_with_complexity": false
+          }
+        }
+      },
+      "frontend": {
+        "label": "Frontend Application",
+        "description": "Frontend-focused development (e.g., React, Vue, Angular)",
+        "workflow_phases": {
+          "planning_design": {
+            "label": "Planning & Design",
+            "description": "Component architecture, state management, API integration patterns",
+            "base_minutes_at_complexity_5": 75,
+            "min_minutes": 15,
+            "max_minutes": 150,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Implementation",
+            "description": "Component development, hooks, state management, styling",
+            "base_minutes_at_complexity_5": 300,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "self_review": {
+            "label": "Self Review",
+            "description": "Review your own code for bugs, accessibility, styling issues before testing",
+            "base_minutes": 30,
+            "scales_with_complexity": false
+          },
+          "testing": {
+            "label": "Testing",
+            "description": "Component tests, integration tests, E2E tests (Playwright/Cypress)",
+            "percentage_of_implementation": 45,
+            "min_minutes": 25,
+            "max_minutes": 400
+          },
+          "code_review": {
+            "label": "Code Review & Revisions",
+            "description": "Peer review, accessibility review, addressing feedback",
+            "base_minutes_at_complexity_5": 35,
+            "min_minutes": 10,
+            "max_minutes": 90,
+            "scales_with_complexity": true
+          },
+          "deployment_verification": {
+            "label": "Deployment to Test + Verification",
+            "description": "Build, deploy to test environment, cross-browser verification",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 45,
+            "scales_with_complexity": false
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_planning": {
+            "label": "AI Planning",
+            "description": "AI generates component structure, state management, styling approach",
+            "time_savings_percentage": 75,
+            "base_on_manual_phase": "planning_design"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates components, hooks, state management, styling",
+            "time_savings_percentage": 70,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_review": {
+            "label": "AI Review",
+            "description": "AI reviews code for accessibility, performance, React best practices",
+            "base_minutes": 10,
+            "scales_with_complexity": false
+          },
+          "human_review_testing": {
+            "label": "Human Review & Testing",
+            "description": "Human validates UI/UX, tests interactions, validates accessibility",
+            "manual_phase_testing_percentage": 55,
+            "manual_phase_self_review_percentage": 100,
+            "notes": "Takes 100% of manual self_review + 55% of manual testing (AI handles component tests well)"
+          },
+          "iterations": {
+            "label": "Iterations & Vibe Coding",
+            "description": "Fix styling issues, adjust animations, refine UX, regenerate components",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 80,
+            "scales_with_complexity": true
+          },
+          "deploy_test": {
+            "label": "Deploy to Test",
+            "description": "Build and deploy",
+            "time_savings_percentage": 0,
+            "base_on_manual_phase": "deployment_verification",
+            "notes": "Same as manual - deployment time doesn't change"
+          },
+          "test_verification": {
+            "label": "Test Verification",
+            "description": "Cross-browser testing, visual regression, E2E validation",
+            "base_minutes": 15,
+            "infrastructure_changes_minutes": 25,
+            "scales_with_complexity": false
+          }
+        }
+      },
+      "fullstack": {
+        "label": "Full-Stack Application",
+        "description": "Full-stack development (backend + frontend)",
+        "workflow_phases": {
+          "planning_design": {
+            "label": "Planning & Design",
+            "description": "Full-stack architecture, API contracts, database schema, component design",
+            "base_minutes_at_complexity_5": 120,
+            "min_minutes": 20,
+            "max_minutes": 240,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Implementation",
+            "description": "Backend + frontend development, API + UI components",
+            "base_minutes_at_complexity_5": 450,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "self_review": {
+            "label": "Self Review",
+            "description": "Review your own code for bugs, API contracts, integration issues before testing",
+            "base_minutes": 30,
+            "scales_with_complexity": false
+          },
+          "testing": {
+            "label": "Testing",
+            "description": "Backend tests, frontend tests, integration tests, E2E tests",
+            "percentage_of_implementation": 50,
+            "min_minutes": 40,
+            "max_minutes": 600
+          },
+          "code_review": {
+            "label": "Code Review & Revisions",
+            "description": "Peer review of backend + frontend, addressing feedback",
+            "base_minutes_at_complexity_5": 60,
+            "min_minutes": 20,
+            "max_minutes": 150,
+            "scales_with_complexity": true
+          },
+          "deployment_verification": {
+            "label": "Deployment to Test + Verification",
+            "description": "Deploy backend + frontend, end-to-end verification",
+            "base_minutes": 45,
+            "infrastructure_changes_minutes": 90,
+            "scales_with_complexity": false
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_planning": {
+            "label": "AI Planning",
+            "description": "AI generates full-stack architecture, API contracts, component structure",
+            "time_savings_percentage": 70,
+            "base_on_manual_phase": "planning_design"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates backend APIs, frontend components, integration code",
+            "time_savings_percentage": 65,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_review": {
+            "label": "AI Review",
+            "description": "AI reviews code for API contracts, integration issues, best practices",
+            "base_minutes": 15,
+            "scales_with_complexity": false
+          },
+          "human_review_testing": {
+            "label": "Human Review & Testing",
+            "description": "Human validates full-stack integration, E2E testing, API validation",
+            "manual_phase_testing_percentage": 60,
+            "manual_phase_self_review_percentage": 100,
+            "notes": "Takes 100% of manual self_review + 60% of manual testing (full integration needs validation)"
+          },
+          "iterations": {
+            "label": "Iterations & Vibe Coding",
+            "description": "Fix integration bugs, adjust API contracts, refine both frontend and backend",
+            "base_minutes_at_complexity_5": 35,
+            "min_minutes": 15,
+            "max_minutes": 120,
+            "scales_with_complexity": true
+          },
+          "deploy_test": {
+            "label": "Deploy to Test",
+            "description": "Deploy backend + frontend",
+            "time_savings_percentage": 0,
+            "base_on_manual_phase": "deployment_verification",
+            "notes": "Same as manual - deployment time doesn't change"
+          },
+          "test_verification": {
+            "label": "Test Verification",
+            "description": "End-to-end verification, API testing, UI validation",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 45,
+            "scales_with_complexity": false
+          }
+        }
+      },
+      "mobile": {
+        "label": "Mobile Application",
+        "description": "Mobile app development (Android, iOS, React Native, Flutter)",
+        "workflow_phases": {
+          "planning_design": {
+            "label": "Planning & Design",
+            "description": "Screen flows, navigation, offline support, mobile architecture patterns",
+            "base_minutes_at_complexity_5": 100,
+            "min_minutes": 20,
+            "max_minutes": 200,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Implementation",
+            "description": "UI development, business logic, API integration, local storage",
+            "base_minutes_at_complexity_5": 330,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "self_review": {
+            "label": "Self Review",
+            "description": "Review code for mobile best practices, memory leaks, offline behavior",
+            "base_minutes": 30,
+            "scales_with_complexity": false
+          },
+          "testing": {
+            "label": "Testing",
+            "description": "Unit tests, UI tests, device testing (multiple devices/OS versions)",
+            "percentage_of_implementation": 50,
+            "min_minutes": 30,
+            "max_minutes": 480
+          },
+          "code_review": {
+            "label": "Code Review & Revisions",
+            "description": "Peer review, addressing feedback, mobile-specific reviews",
+            "base_minutes_at_complexity_5": 40,
+            "min_minutes": 15,
+            "max_minutes": 100,
+            "scales_with_complexity": true
+          },
+          "deployment_verification": {
+            "label": "Deployment to Test + Verification",
+            "description": "TestFlight/Internal Testing deployment, device verification",
+            "base_minutes": 35,
+            "infrastructure_changes_minutes": 50,
+            "scales_with_complexity": false
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_planning": {
+            "label": "AI Planning",
+            "description": "AI generates screen flows, navigation patterns, data models",
+            "time_savings_percentage": 70,
+            "base_on_manual_phase": "planning_design"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates UI components, view models, API integration, local storage",
+            "time_savings_percentage": 65,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_review": {
+            "label": "AI Review",
+            "description": "AI reviews for memory leaks, mobile best practices, accessibility",
+            "base_minutes": 12,
+            "scales_with_complexity": false
+          },
+          "human_review_testing": {
+            "label": "Human Review & Testing",
+            "description": "Human validates UI/UX on devices, tests gestures, offline behavior",
+            "manual_phase_testing_percentage": 70,
+            "manual_phase_self_review_percentage": 100,
+            "notes": "Takes 100% of manual self_review + 70% of manual testing (device testing critical)"
+          },
+          "iterations": {
+            "label": "Iterations & Vibe Coding",
+            "description": "Fix UI issues, adjust layouts, refine animations, test on devices",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 100,
+            "scales_with_complexity": true
+          },
+          "deploy_test": {
+            "label": "Deploy to Test",
+            "description": "TestFlight/Internal Testing build",
+            "time_savings_percentage": 0,
+            "base_on_manual_phase": "deployment_verification",
+            "notes": "Same as manual - deployment time doesn't change"
+          },
+          "test_verification": {
+            "label": "Test Verification",
+            "description": "Device testing, gesture validation, offline mode testing",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 35,
+            "scales_with_complexity": false
+          }
+        }
+      }
+    },
+
+    "overhead_activities": {
+      "description": "Additional time for project-specific processes and workflows that occur outside core development",
+      "activities": {
+        "database_changes": {
+          "enabled": true,
+          "label": "Database Change Management",
+          "description": "Extra time for creating DBA ticket and Confluence documentation when database changes are involved",
+          "additional_minutes": 20,
+          "rationale": "Process: Create JIRA ticket for DBA to execute manually on test/prod DB + attach to Confluence page",
+          "detection": {
+            "keywords": [
+              "migration", "database", "db", "table", "column", "index", "schema",
+              "create table", "alter table", "drop table", "add column", "modify column",
+              "add index", "create index", "foreign key", "constraint"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": true,
+            "file_patterns": ["*migration*", "*schema*", "*.sql"]
+          },
+          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
+          "notes": "Applied once per ticket, regardless of number of DB changes"
+        },
+        "security_review": {
+          "enabled": false,
+          "label": "Security Review Process",
+          "description": "Extra time for mandatory security review for auth/permission changes",
+          "additional_minutes": 30,
+          "rationale": "Process: Submit security review request + address findings",
+          "detection": {
+            "keywords": [
+              "security", "auth", "authentication", "authorization", "permission",
+              "credential", "token", "oauth", "sso", "role", "access control"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": false
+          },
+          "applies_to_task_types": ["net_new", "enhancement", "refactor"],
+          "notes": "Enable if your organization requires formal security reviews"
+        },
+        "legal_compliance": {
+          "enabled": false,
+          "label": "Legal/Compliance Review",
+          "description": "Extra time for legal review of user-facing content or data handling changes",
+          "additional_minutes": 45,
+          "rationale": "Process: Submit to legal team + incorporate feedback",
+          "detection": {
+            "keywords": [
+              "privacy", "gdpr", "ccpa", "terms", "policy", "consent",
+              "data collection", "pii", "personal data"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": false
+          },
+          "applies_to_task_types": ["net_new", "enhancement"],
+          "notes": "Enable if your organization requires legal review for certain changes"
+        },
+        "documentation_update": {
+          "enabled": false,
+          "label": "Documentation Update",
+          "description": "Extra time for updating user-facing documentation or API docs",
+          "additional_minutes": 15,
+          "rationale": "Process: Update docs in wiki/confluence/readme + request review",
+          "detection": {
+            "keywords": [
+              "api change", "breaking change", "new feature", "user-facing",
+              "public api", "documentation needed"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": false
+          },
+          "applies_to_task_types": ["net_new", "enhancement"],
+          "notes": "Enable if documentation updates are tracked separately from code"
+        }
+      },
+      "notes": [
+        "Overhead activities are detected automatically based on keywords",
+        "Multiple overheads can apply to a single ticket",
+        "Teams should customize keywords and times based on their processes",
+        "Disable activities that don't apply to your workflow"
+      ]
+    },
+
+    "task_types": {
+      "net_new": {
+        "label": "Net-New Feature",
+        "description": "Building something that doesn't exist in the codebase",
+        "base_unit_minutes": 45,
+        "complexity_multiplier": 1.0,
+        "human_multiplier": 3.0,
+        "keywords": ["new", "create", "build", "implement"],
+        "characteristics": [
+          "Creating new files/components from scratch",
+          "Introducing new patterns or architectures",
+          "Adding new integrations or dependencies",
+          "No similar code to reference"
+        ]
+      },
+      "enhancement": {
+        "label": "Enhancement/Extension",
+        "description": "Extending existing functionality with new capabilities",
+        "base_unit_minutes": 34,
+        "complexity_multiplier": 0.75,
+        "human_multiplier": 2.75,
+        "keywords": ["add", "extend", "enhance", "support"],
+        "exclude_keywords": ["new"],
+        "characteristics": [
+          "Adding features to existing components",
+          "Following established patterns",
+          "Similar code exists as reference",
+          "Some new logic but within familiar domain"
+        ]
+      },
+      "refactor": {
+        "label": "Refactor/Hardening",
+        "description": "Improving existing code without changing behavior",
+        "base_unit_minutes": 26,
+        "complexity_multiplier": 0.58,
+        "human_multiplier": 2.5,
+        "keywords": ["refactor", "improve", "optimize", "harden", "strengthen", "type", "validate"],
+        "characteristics": [
+          "Strengthening validation/error handling",
+          "Improving type safety",
+          "Optimizing existing code",
+          "No new features, just better implementation"
+        ]
+      },
+      "bug_fix": {
+        "label": "Bug Fix",
+        "description": "Fixing incorrect behavior in existing code",
+        "base_unit_minutes": 19,
+        "complexity_multiplier": 0.42,
+        "human_multiplier": 2.5,
+        "keywords": ["fix", "bug", "defect", "issue", "broken", "error"],
+        "issue_types": ["Bug"],
+        "characteristics": [
+          "Problem is well-defined",
+          "Code location is known",
+          "Fix is typically localized (1-3 files)",
+          "Testing focuses on regression"
+        ]
+      },
+      "spike": {
+        "label": "Spike/Investigation",
+        "description": "Research work with uncertain outcomes",
+        "base_unit_minutes": null,
+        "complexity_multiplier": null,
+        "human_multiplier": 1.5,
+        "keywords": ["spike", "investigate", "research", "explore", "poc", "prototype"],
+        "issue_types": ["Spike"],
+        "time_box_hours": [1, 2, 3, 4],
+        "characteristics": [
+          "Exploring unknowns",
+          "Prototyping solutions",
+          "Evaluating technologies",
+          "No production deliverable"
+        ]
+      }
+    },
+
+    "complexity_factors": {
+      "scope_size": {
+        "description": "Size and breadth of changes",
+        "scoring_guide": {
+          "1-2": "1-3 files, <50 LOC, minimal API changes",
+          "3-4": "3-5 files, 50-150 LOC, limited API surface",
+          "5-6": "5-10 files, 150-400 LOC, moderate API changes",
+          "7-8": "10-20 files, 400-800 LOC, significant API changes",
+          "9-10": "20+ files, 800+ LOC, major API redesign"
+        }
+      },
+      "technical_complexity": {
+        "description": "Algorithm and integration complexity",
+        "scoring_guide": {
+          "1-2": "Simple CRUD, straightforward logic",
+          "3-4": "Moderate logic, 1-2 integration points",
+          "5-6": "Complex algorithms, 3-4 integration points, state management",
+          "7-8": "Advanced patterns, 5+ integrations, concurrency needed",
+          "9-10": "Highly complex algorithms, distributed systems, performance critical"
+        }
+      },
+      "testing_requirements": {
+        "description": "Test coverage and complexity",
+        "scoring_guide": {
+          "1-2": "Minimal unit tests, no integration tests",
+          "3-4": "Standard unit tests, basic integration",
+          "5-6": "Comprehensive unit + integration tests",
+          "7-8": "Extensive testing, complex test data setup",
+          "9-10": "E2E tests, performance tests, complex scenarios"
+        }
+      },
+      "risk_and_unknowns": {
+        "description": "New technology and uncertainty",
+        "scoring_guide": {
+          "1-2": "Well-known tech, clear requirements",
+          "3-4": "Familiar tech, minor ambiguity",
+          "5-6": "Some new tech or unclear requirements",
+          "7-8": "New tech or significant ambiguity",
+          "9-10": "Unfamiliar tech, major unknowns, breaking changes"
+        }
+      },
+      "dependencies": {
+        "description": "Blocking dependencies and coordination",
+        "scoring_guide": {
+          "1-2": "No blockers, independent work",
+          "3-4": "Minor dependencies, minimal coordination",
+          "5-6": "Some blockers, moderate coordination",
+          "7-8": "Multiple blockers, cross-team coordination",
+          "9-10": "Critical path blockers, extensive coordination"
+        }
+      }
+    },
+
+    "complexity_weights": {
+      "net_new": {
+        "scope_size": 25,
+        "technical_complexity": 25,
+        "testing_requirements": 20,
+        "risk_and_unknowns": 20,
+        "dependencies": 10
+      },
+      "enhancement": {
+        "scope_size": 20,
+        "technical_complexity": 25,
+        "testing_requirements": 20,
+        "risk_and_unknowns": 20,
+        "dependencies": 15
+      },
+      "refactor": {
+        "scope_size": 15,
+        "technical_complexity": 20,
+        "testing_requirements": 25,
+        "risk_and_unknowns": 15,
+        "dependencies": 25
+      },
+      "bug_fix": {
+        "scope_size": 10,
+        "technical_complexity": 15,
+        "testing_requirements": 30,
+        "risk_and_unknowns": 10,
+        "dependencies": 35
+      }
+    },
+
+    "t_shirt_sizing": {
+      "XS": {
+        "complexity_range": [1, 2],
+        "description": "Trivial change, 1-3 files, no tests needed, <50 LOC"
+      },
+      "S": {
+        "complexity_range": [3, 4],
+        "description": "Simple feature, 3-5 files, basic tests, 50-150 LOC"
+      },
+      "M": {
+        "complexity_range": [5, 6],
+        "description": "Standard feature, 5-10 files, comprehensive tests, 150-400 LOC"
+      },
+      "L": {
+        "complexity_range": [7, 8],
+        "description": "Complex feature, 10-20 files, extensive tests, 400-800 LOC"
+      },
+      "XL": {
+        "complexity_range": [9, 10],
+        "description": "Major feature/refactor, 20+ files, integration testing, 800+ LOC"
+      }
+    },
+
+    "story_points": {
+      "fibonacci_sequence": [1, 2, 3, 5, 8, 13, 21],
+      "mapping": {
+        "1-2": [1, 2],
+        "3-4": 3,
+        "5-6": 5,
+        "7-8": 8,
+        "9-10": [13, 21]
+      },
+      "default_team_velocity": 1.0,
+      "velocity_range": [0.5, 2.0]
+    },
+
+    "workflow_calculation": {
+      "description": "How to calculate workflow phase times based on project type and complexity",
+      "scale_factor_formula": "adjustedComplexity / 5",
+      "notes": [
+        "Each project type defines its own workflow phases in project_types section",
+        "Phases can scale with complexity using scale_factor or be fixed",
+        "Implementation phase uses task-type-specific base units",
+        "Testing is typically a percentage of implementation time"
+      ]
+    },
+
+    "bucket_rounding": {
+      "description": "Round final estimates to standardized buckets using threshold-based approach",
+      "buckets_hours": [0, 1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40],
+      "day_hours": 8,
+      "max_hours": 40,
+      "max_days": 5,
+      "threshold_formula": "currentBucket + ((nextBucket - currentBucket) * 0.25)",
+      "thresholds": {
+        "0": {"next": 1, "threshold": 0.25},
+        "1": {"next": 2, "threshold": 1.25},
+        "2": {"next": 3, "threshold": 2.25},
+        "3": {"next": 4, "threshold": 3.25},
+        "4": {"next": 6, "threshold": 4.5},
+        "6": {"next": 8, "threshold": 6.5},
+        "8": {"next": 12, "threshold": 9.0},
+        "12": {"next": 16, "threshold": 13.0},
+        "16": {"next": 20, "threshold": 17.0},
+        "20": {"next": 24, "threshold": 21.0},
+        "24": {"next": 28, "threshold": 25.0},
+        "28": {"next": 32, "threshold": 29.0},
+        "32": {"next": 36, "threshold": 33.0},
+        "36": {"next": 40, "threshold": 37.0}
+      },
+      "split_scope_message": "Estimate exceeds 40 hours (5 days). Consider splitting this into multiple tickets."
+    },
+
+    "confidence_levels": {
+      "high": {
+        "variance_percentage": 20,
+        "description": "Requirements clear, similar work done recently, familiar technology"
+      },
+      "medium": {
+        "variance_percentage": 40,
+        "description": "Some ambiguity in requirements or technology, moderate unknowns"
+      },
+      "low": {
+        "variance_percentage": 60,
+        "description": "Significant ambiguity, unfamiliar technology, major unknowns"
+      }
+    },
+
+    "tech_stack_considerations": {
+      "description": "Technology-specific factors to consider during estimation",
+      "laravel": {
+        "considerations": ["Database migrations", "Route definitions", "Eloquent relationships", "Validation rules"],
+        "typical_files": ["Controller", "Model", "Migration", "Request", "Routes"]
+      },
+      "react": {
+        "considerations": ["Component hierarchy", "State management", "Hooks usage", "Props drilling"],
+        "typical_files": ["Component", "Hook", "Context", "Types", "Styles"]
+      },
+      "lambda": {
+        "considerations": ["Cold start optimization", "IAM permissions", "Event sources", "Deployment package size"],
+        "typical_files": ["Handler", "Layer", "Template", "Environment config"]
+      },
+      "playwright": {
+        "considerations": ["Test selectors", "Wait strategies", "Test data setup", "CI/CD integration"],
+        "typical_files": ["Test spec", "Page object", "Fixtures", "Config"]
+      }
+    },
+
+    "defaults": {
+      "description": "Default configuration values",
+      "project_type": "monolithic",
+      "team_velocity": 1.0,
+      "has_infrastructure_changes": false
+    },
+
+    "calibration": {
+      "description": "Track estimation accuracy and adjust parameters over time",
+      "tracking_metrics": [
+        "Estimated vs actual time by task type",
+        "Estimated vs actual time by project type",
+        "Complexity scoring accuracy",
+        "Bucket rounding effectiveness",
+        "Confidence level correlation with variance",
+        "Workflow phase accuracy"
+      ],
+      "adjustment_guidelines": {
+        "base_unit_increment": 5,
+        "phase_time_increment": 5,
+        "review_frequency": "quarterly",
+        "min_sample_size": 10,
+        "notes": "Adjust project-specific workflow phases based on historical data"
+      }
+    }
+  }
+}

@@ -1,0 +1,805 @@
+#!/usr/bin/env python3
+"""
+Jira Ticket Estimator - Utility Functions
+
+Provides calculation and classification functions for comprehensive
+ticket estimation based on task type, complexity scoring, and workflow phases.
+
+All configuration is loaded from heuristics.json.
+"""
+
+import re
+import json
+import math
+from typing import Dict, List, Tuple, Optional
+
+
+class TicketEstimator:
+    """Main estimator class with all calculation logic."""
+
+    def __init__(self, heuristics_file='heuristics.json'):
+        """Load configuration from heuristics.json."""
+        with open(heuristics_file, 'r') as f:
+            self.config = json.load(f)['estimation_config']
+
+    def classify_task_type(self, title: str, description: str, issue_type: str = None) -> Tuple[str, List[str]]:
+        """
+        Classify ticket into task type based on keywords and issue type.
+
+        Returns:
+            Tuple of (task_type_key, reasons)
+        """
+        title_lower = title.lower()
+        desc_lower = description.lower()
+        reasons = []
+
+        # Check issue type first
+        if issue_type:
+            for task_key, task_config in self.config['task_types'].items():
+                if 'issue_types' in task_config and issue_type in task_config['issue_types']:
+                    reasons.append(f"Issue type is '{issue_type}'")
+                    return task_key, reasons
+
+        # Check keywords for each task type
+        for task_key, task_config in self.config['task_types'].items():
+            keywords = task_config.get('keywords', [])
+            exclude_keywords = task_config.get('exclude_keywords', [])
+
+            # Check if any keyword matches
+            keyword_matches = []
+            for keyword in keywords:
+                if keyword in title_lower or keyword in desc_lower:
+                    keyword_matches.append(keyword)
+
+            # Check if any exclude keyword matches
+            exclude_matches = []
+            for exclude in exclude_keywords:
+                if exclude in title_lower or exclude in desc_lower:
+                    exclude_matches.append(exclude)
+
+            # If we have keyword matches and no exclude matches, classify
+            if keyword_matches and not exclude_matches:
+                reasons.append(f"Keywords found: {', '.join(keyword_matches)}")
+                return task_key, reasons
+
+        # Default to enhancement if uncertain
+        reasons.append("No specific keywords found, defaulting to enhancement")
+        return 'enhancement', reasons
+
+    def calculate_complexity_score(self,
+                                   task_type: str,
+                                   scope_score: int,
+                                   technical_score: int,
+                                   testing_score: int,
+                                   risk_score: int,
+                                   dependencies_score: int) -> Tuple[float, float, float]:
+        """
+        Calculate raw and adjusted complexity scores.
+
+        Returns:
+            Tuple of (raw_complexity, adjusted_complexity, scale_factor)
+        """
+        # Get task-type-specific weights
+        weights = self.config['complexity_weights'][task_type]
+
+        # Calculate weighted average (raw complexity)
+        raw_complexity = (
+            scope_score * weights['scope_size'] +
+            technical_score * weights['technical_complexity'] +
+            testing_score * weights['testing_requirements'] +
+            risk_score * weights['risk_and_unknowns'] +
+            dependencies_score * weights['dependencies']
+        ) / 100.0
+
+        # Apply task type multiplier
+        task_config = self.config['task_types'][task_type]
+        multiplier = task_config['complexity_multiplier']
+        adjusted_complexity = raw_complexity * multiplier
+
+        # Calculate scale factor
+        scale_factor = adjusted_complexity / 5.0
+
+        return raw_complexity, adjusted_complexity, scale_factor
+
+    def get_t_shirt_size(self, adjusted_complexity: float) -> str:
+        """Map adjusted complexity to T-shirt size."""
+        for size, config in self.config['t_shirt_sizing'].items():
+            min_val, max_val = config['complexity_range']
+            if min_val <= adjusted_complexity <= max_val:
+                return size
+        return 'XL'  # Default to XL if over 10
+
+    def get_story_points(self, adjusted_complexity: float, team_velocity: float = 1.0) -> int:
+        """Map adjusted complexity to Story Points (Fibonacci)."""
+        # Apply team velocity
+        base_points = adjusted_complexity * team_velocity
+
+        # Get Fibonacci sequence
+        fibonacci = self.config['story_points']['fibonacci_sequence']
+
+        # Find nearest Fibonacci number
+        nearest = min(fibonacci, key=lambda x: abs(x - base_points))
+        return nearest
+
+    def detect_overhead_activities(self,
+                                   title: str,
+                                   description: str,
+                                   task_type: str,
+                                   files_involved: List[str] = None) -> List[Dict]:
+        """
+        Detect overhead activities based on keywords and file patterns.
+
+        Returns:
+            List of detected overhead activities with time and rationale
+        """
+        if 'overhead_activities' not in self.config:
+            return []
+
+        overhead_config = self.config['overhead_activities']
+        detected = []
+
+        for activity_key, activity in overhead_config.get('activities', {}).items():
+            # Skip if not enabled
+            if not activity.get('enabled', False):
+                continue
+
+            # Check if applies to this task type
+            applies_to = activity.get('applies_to_task_types', [])
+            if applies_to and task_type not in applies_to:
+                continue
+
+            detection = activity.get('detection', {})
+            keywords = detection.get('keywords', [])
+            check_title = detection.get('check_title', False)
+            check_description = detection.get('check_description', False)
+            check_files = detection.get('check_files', False)
+            file_patterns = detection.get('file_patterns', [])
+
+            # Check for keyword matches
+            matched_keywords = []
+            text_to_check = ''
+
+            if check_title:
+                text_to_check += ' ' + title.lower()
+            if check_description:
+                text_to_check += ' ' + description.lower()
+
+            # Check text for keywords
+            for keyword in keywords:
+                if keyword.lower() in text_to_check:
+                    matched_keywords.append(keyword)
+
+            # Check file patterns if files provided
+            file_matches = []
+            if check_files and files_involved:
+                import fnmatch
+                for file_path in files_involved:
+                    file_lower = file_path.lower()
+                    for pattern in file_patterns:
+                        if fnmatch.fnmatch(file_lower, pattern.lower()):
+                            file_matches.append(file_path)
+                            break
+
+            # If we found matches, add to detected
+            if matched_keywords or file_matches:
+                detected.append({
+                    'activity_key': activity_key,
+                    'label': activity.get('label', activity_key),
+                    'description': activity.get('description', ''),
+                    'rationale': activity.get('rationale', ''),
+                    'additional_minutes': activity.get('additional_minutes', 0),
+                    'matched_keywords': matched_keywords[:3],  # Show up to 3 keywords
+                    'matched_files': file_matches[:3],  # Show up to 3 files
+                    'notes': activity.get('notes', '')
+                })
+
+        return detected
+
+    def calculate_manual_workflow_time(self,
+                                      project_type: str,
+                                      task_type: str,
+                                      adjusted_complexity: float,
+                                      scale_factor: float,
+                                      has_infrastructure_changes: bool = False) -> Dict[str, float]:
+        """
+        Calculate manual development workflow time breakdown based on project type.
+
+        Uses the 6-phase development process:
+        1. Planning & Design
+        2. Implementation
+        3. Self Review
+        4. Testing
+        5. Code Review & Revisions
+        6. Deployment to Test + Verification
+
+        Returns:
+            Dict with phase times in minutes and total
+        """
+        project_config = self.config['project_types'][project_type]
+        task_config = self.config['task_types'][task_type]
+        phases = project_config['workflow_phases']
+
+        # Phase 1: Planning & Design (scales with complexity)
+        planning_base = phases['planning_design']['base_minutes_at_complexity_5']
+        planning_time = planning_base * scale_factor
+
+        # Phase 2: Implementation (task-type-specific base unit × adjusted complexity)
+        base_unit = task_config['base_unit_minutes']
+        if base_unit is None:  # Spike - time-boxed separately
+            implementation_time = 0
+        else:
+            implementation_time = adjusted_complexity * base_unit
+
+        # Phase 3: Self Review (fixed time)
+        self_review_time = phases['self_review']['base_minutes']
+
+        # Phase 4: Testing (percentage of implementation)
+        testing_percentage = phases['testing']['percentage_of_implementation'] / 100.0
+        testing_time = implementation_time * testing_percentage
+
+        # Phase 5: Code Review & Revisions (scales with complexity)
+        code_review_base = phases['code_review']['base_minutes_at_complexity_5']
+        code_review_time = code_review_base * scale_factor
+
+        # Phase 6: Deployment to Test + Verification (fixed)
+        if has_infrastructure_changes:
+            deploy_time = phases['deployment_verification']['infrastructure_changes_minutes']
+        else:
+            deploy_time = phases['deployment_verification']['base_minutes']
+
+        # Total
+        total_minutes = (planning_time + implementation_time + self_review_time +
+                        testing_time + code_review_time + deploy_time)
+
+        return {
+            'planning_design': round(planning_time, 1),
+            'implementation': round(implementation_time, 1),
+            'self_review': round(self_review_time, 1),
+            'testing': round(testing_time, 1),
+            'code_review': round(code_review_time, 1),
+            'deployment_verification': round(deploy_time, 1),
+            'total_minutes': round(total_minutes, 1),
+            'total_hours': round(total_minutes / 60.0, 2),
+            'phases': {
+                '1_planning_design': {
+                    'label': phases['planning_design']['label'],
+                    'description': phases['planning_design']['description'],
+                    'time_minutes': round(planning_time, 1),
+                    'scales_with_complexity': True
+                },
+                '2_implementation': {
+                    'label': phases['implementation']['label'],
+                    'description': phases['implementation']['description'],
+                    'time_minutes': round(implementation_time, 1),
+                    'scales_with_complexity': True,
+                    'task_type_base_unit': base_unit
+                },
+                '3_self_review': {
+                    'label': phases['self_review']['label'],
+                    'description': phases['self_review']['description'],
+                    'time_minutes': round(self_review_time, 1),
+                    'scales_with_complexity': False
+                },
+                '4_testing': {
+                    'label': phases['testing']['label'],
+                    'description': phases['testing']['description'],
+                    'time_minutes': round(testing_time, 1),
+                    'percentage_of_implementation': testing_percentage * 100
+                },
+                '5_code_review': {
+                    'label': phases['code_review']['label'],
+                    'description': phases['code_review']['description'],
+                    'time_minutes': round(code_review_time, 1),
+                    'scales_with_complexity': True
+                },
+                '6_deployment_verification': {
+                    'label': phases['deployment_verification']['label'],
+                    'description': phases['deployment_verification']['description'],
+                    'time_minutes': round(deploy_time, 1),
+                    'infrastructure_changes': has_infrastructure_changes
+                }
+            }
+        }
+
+    def calculate_ai_assisted_workflow_time(self,
+                                            project_type: str,
+                                            task_type: str,
+                                            adjusted_complexity: float,
+                                            scale_factor: float,
+                                            manual_workflow: Dict[str, float],
+                                            has_infrastructure_changes: bool = False) -> Dict[str, float]:
+        """
+        Calculate AI-assisted development workflow time breakdown.
+
+        Uses the 7-phase AI-assisted workflow:
+        1. AI Planning
+        2. AI Implementation
+        3. AI Review
+        4. Human Review & Testing
+        5. Iterations & Vibe Coding
+        6. Deploy to Test
+        7. Test Verification
+
+        Returns:
+            Dict with phase times in minutes and total
+        """
+        project_config = self.config['project_types'][project_type]
+        ai_phases = project_config['ai_assisted_workflow']
+
+        # Phase 1: AI Planning (time savings from manual planning)
+        ai_planning_config = ai_phases['ai_planning']
+        savings_pct = ai_planning_config['time_savings_percentage'] / 100.0
+        ai_planning_time = manual_workflow['planning_design'] * (1 - savings_pct)
+
+        # Phase 2: AI Implementation (time savings from manual implementation)
+        ai_impl_config = ai_phases['ai_implementation']
+        savings_pct = ai_impl_config['time_savings_percentage'] / 100.0
+        ai_implementation_time = manual_workflow['implementation'] * (1 - savings_pct)
+
+        # Phase 3: AI Review (fixed time)
+        ai_review_time = ai_phases['ai_review']['base_minutes']
+
+        # Phase 4: Human Review & Testing (percentage of manual self_review + testing)
+        human_review_config = ai_phases['human_review_testing']
+        testing_pct = human_review_config['manual_phase_testing_percentage'] / 100.0
+        self_review_pct = human_review_config['manual_phase_self_review_percentage'] / 100.0
+        human_review_testing_time = (manual_workflow['self_review'] * self_review_pct +
+                                      manual_workflow['testing'] * testing_pct)
+
+        # Phase 5: Iterations & Vibe Coding (scales with complexity)
+        iterations_config = ai_phases['iterations']
+        iterations_base = iterations_config['base_minutes_at_complexity_5']
+        iterations_time = iterations_base * scale_factor
+
+        # Phase 6: Deploy to Test (same as manual deployment)
+        if has_infrastructure_changes:
+            deploy_time = manual_workflow['deployment_verification']
+        else:
+            deploy_time = manual_workflow['deployment_verification']
+
+        # Phase 7: Test Verification (fixed or based on infra)
+        verification_config = ai_phases['test_verification']
+        if has_infrastructure_changes:
+            verification_time = verification_config['infrastructure_changes_minutes']
+        else:
+            verification_time = verification_config['base_minutes']
+
+        # Total
+        total_minutes = (ai_planning_time + ai_implementation_time + ai_review_time +
+                        human_review_testing_time + iterations_time + deploy_time + verification_time)
+
+        return {
+            'ai_planning': round(ai_planning_time, 1),
+            'ai_implementation': round(ai_implementation_time, 1),
+            'ai_review': round(ai_review_time, 1),
+            'human_review_testing': round(human_review_testing_time, 1),
+            'iterations': round(iterations_time, 1),
+            'deploy_test': round(deploy_time, 1),
+            'test_verification': round(verification_time, 1),
+            'total_minutes': round(total_minutes, 1),
+            'total_hours': round(total_minutes / 60.0, 2),
+            'phases': {
+                '1_ai_planning': {
+                    'label': ai_phases['ai_planning']['label'],
+                    'description': ai_phases['ai_planning']['description'],
+                    'time_minutes': round(ai_planning_time, 1),
+                    'time_savings_percentage': ai_phases['ai_planning']['time_savings_percentage']
+                },
+                '2_ai_implementation': {
+                    'label': ai_phases['ai_implementation']['label'],
+                    'description': ai_phases['ai_implementation']['description'],
+                    'time_minutes': round(ai_implementation_time, 1),
+                    'time_savings_percentage': ai_phases['ai_implementation']['time_savings_percentage']
+                },
+                '3_ai_review': {
+                    'label': ai_phases['ai_review']['label'],
+                    'description': ai_phases['ai_review']['description'],
+                    'time_minutes': round(ai_review_time, 1)
+                },
+                '4_human_review_testing': {
+                    'label': ai_phases['human_review_testing']['label'],
+                    'description': ai_phases['human_review_testing']['description'],
+                    'time_minutes': round(human_review_testing_time, 1)
+                },
+                '5_iterations': {
+                    'label': ai_phases['iterations']['label'],
+                    'description': ai_phases['iterations']['description'],
+                    'time_minutes': round(iterations_time, 1),
+                    'scales_with_complexity': True
+                },
+                '6_deploy_test': {
+                    'label': ai_phases['deploy_test']['label'],
+                    'description': ai_phases['deploy_test']['description'],
+                    'time_minutes': round(deploy_time, 1)
+                },
+                '7_test_verification': {
+                    'label': ai_phases['test_verification']['label'],
+                    'description': ai_phases['test_verification']['description'],
+                    'time_minutes': round(verification_time, 1),
+                    'infrastructure_changes': has_infrastructure_changes
+                }
+            }
+        }
+
+    def apply_bucket_rounding(self, hours: float) -> Tuple[int, float]:
+        """
+        Round hours to nearest bucket using threshold-based approach.
+
+        Returns:
+            Tuple of (rounded_hours, threshold_used)
+        """
+        buckets = self.config['bucket_rounding']['buckets_hours']
+        thresholds = self.config['bucket_rounding']['thresholds']
+
+        # Find current bucket (largest bucket <= hours)
+        current_bucket = 0
+        for bucket in buckets:
+            if bucket <= hours:
+                current_bucket = bucket
+            else:
+                break
+
+        # Check if we should round up
+        threshold_config = thresholds.get(str(current_bucket))
+        if threshold_config:
+            threshold = threshold_config['threshold']
+            if hours > threshold:
+                # Jump to next bucket
+                rounded = threshold_config['next']
+                return rounded, threshold
+
+        # Stay at current bucket
+        return current_bucket, threshold_config['threshold'] if threshold_config else hours
+
+    def estimate_ticket(self,
+                       title: str,
+                       description: str,
+                       project_type: str = None,
+                       issue_type: str = None,
+                       complexity_scores: Dict[str, int] = None,
+                       task_type_override: str = None,
+                       team_velocity: float = None,
+                       has_infrastructure_changes: bool = None) -> Dict:
+        """
+        Complete estimation for a ticket.
+
+        Args:
+            title: Ticket title
+            description: Ticket description
+            project_type: Project architecture type (monolithic, serverless, frontend, fullstack)
+            issue_type: Jira issue type (Bug, Story, etc.)
+            complexity_scores: Dict with keys: scope_size, technical_complexity,
+                             testing_requirements, risk_and_unknowns, dependencies
+            task_type_override: Manual task type override
+            team_velocity: Team velocity factor
+            has_infrastructure_changes: Flag for infrastructure changes
+
+        Returns:
+            Complete estimation breakdown
+        """
+        # Use defaults if not provided
+        defaults = self.config.get('defaults', {})
+        if project_type is None:
+            project_type = defaults.get('project_type', 'monolithic')
+        if team_velocity is None:
+            team_velocity = defaults.get('team_velocity', 1.0)
+        if has_infrastructure_changes is None:
+            has_infrastructure_changes = defaults.get('has_infrastructure_changes', False)
+
+        # Classify task type
+        if task_type_override:
+            task_type = task_type_override
+            task_type_reasons = [f"Manual override to '{task_type}'"]
+        else:
+            task_type, task_type_reasons = self.classify_task_type(title, description, issue_type)
+
+        # Use provided complexity scores or defaults
+        if complexity_scores is None:
+            complexity_scores = {
+                'scope_size': 5,
+                'technical_complexity': 5,
+                'testing_requirements': 5,
+                'risk_and_unknowns': 5,
+                'dependencies': 5
+            }
+
+        # Calculate complexity
+        raw_complexity, adjusted_complexity, scale_factor = self.calculate_complexity_score(
+            task_type,
+            complexity_scores['scope_size'],
+            complexity_scores['technical_complexity'],
+            complexity_scores['testing_requirements'],
+            complexity_scores['risk_and_unknowns'],
+            complexity_scores['dependencies']
+        )
+
+        # Get sizing
+        t_shirt_size = self.get_t_shirt_size(adjusted_complexity)
+        story_points = self.get_story_points(adjusted_complexity, team_velocity)
+
+        # Calculate manual development time based on project type
+        manual_workflow = self.calculate_manual_workflow_time(
+            project_type, task_type, adjusted_complexity, scale_factor, has_infrastructure_changes
+        )
+
+        # Detect overhead activities
+        overhead_activities = self.detect_overhead_activities(title, description, task_type, files_involved=None)
+
+        # Calculate total overhead time
+        overhead_minutes = sum(activity['additional_minutes'] for activity in overhead_activities)
+        overhead_hours = overhead_minutes / 60.0
+
+        # Add overhead to workflow total
+        total_with_overhead = manual_workflow['total_hours'] + overhead_hours
+
+        # Apply bucket rounding (on total including overhead)
+        rounded_hours, rounding_threshold = self.apply_bucket_rounding(total_with_overhead)
+
+        # Calculate AI-assisted workflow
+        ai_assisted_workflow = self.calculate_ai_assisted_workflow_time(
+            project_type=project_type,
+            task_type=task_type,
+            adjusted_complexity=adjusted_complexity,
+            scale_factor=scale_factor,
+            manual_workflow=manual_workflow,
+            has_infrastructure_changes=has_infrastructure_changes
+        )
+
+        # Add overhead to AI-assisted total (same overhead applies)
+        ai_total_with_overhead = ai_assisted_workflow['total_hours'] + overhead_hours
+
+        # Apply bucket rounding to AI-assisted total
+        ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_total_with_overhead)
+
+        # Calculate time savings
+        time_savings_hours = total_with_overhead - ai_total_with_overhead
+        time_savings_percentage = (time_savings_hours / total_with_overhead * 100) if total_with_overhead > 0 else 0
+
+        return {
+            'project_type': project_type,
+            'project_type_label': self.config['project_types'][project_type]['label'],
+            'task_type': task_type,
+            'task_type_label': self.config['task_types'][task_type]['label'],
+            'task_type_reasons': task_type_reasons,
+            't_shirt_size': t_shirt_size,
+            'story_points': story_points,
+            'raw_complexity': round(raw_complexity, 2),
+            'adjusted_complexity': round(adjusted_complexity, 2),
+            'scale_factor': round(scale_factor, 3),
+            'complexity_scores': complexity_scores,
+            'manual_workflow': {
+                **manual_workflow,
+                'total_hours_rounded': rounded_hours,
+                'rounding_threshold': rounding_threshold
+            },
+            'ai_assisted_workflow': {
+                **ai_assisted_workflow,
+                'total_hours_rounded': ai_rounded_hours,
+                'rounding_threshold': ai_rounding_threshold
+            },
+            'time_savings': {
+                'hours': round(time_savings_hours, 2),
+                'percentage': round(time_savings_percentage, 1),
+                'manual_total': round(total_with_overhead, 2),
+                'ai_assisted_total': round(ai_total_with_overhead, 2)
+            },
+            'overhead_activities': {
+                'detected': overhead_activities,
+                'total_overhead_minutes': round(overhead_minutes, 1),
+                'total_overhead_hours': round(overhead_hours, 2),
+                'count': len(overhead_activities)
+            },
+            'total_including_overhead': {
+                'total_hours_calculated': round(total_with_overhead, 2),
+                'total_hours_rounded': rounded_hours,
+                'rounding_threshold': rounding_threshold
+            },
+            'team_velocity': team_velocity,
+            'has_infrastructure_changes': has_infrastructure_changes
+        }
+
+
+# Example usage
+if __name__ == '__main__':
+    estimator = TicketEstimator('heuristics.json')
+
+    print("\n" + "=" * 70)
+    print("JIRA TICKET ESTIMATOR - MANUAL DEV WORKFLOW")
+    print("=" * 70)
+
+    # Example 1: Bug Fix - Monolithic
+    print("\n" + "=" * 70)
+    print("Example 1: Bug Fix - Monolithic (Laravel)")
+    print("=" * 70)
+    result = estimator.estimate_ticket(
+        title="Fix validation error on login form",
+        description="The login form is not properly validating email addresses",
+        project_type="monolithic",
+        issue_type="Bug",
+        complexity_scores={
+            'scope_size': 2,
+            'technical_complexity': 2,
+            'testing_requirements': 4,
+            'risk_and_unknowns': 2,
+            'dependencies': 3
+        }
+    )
+
+    print(f"Project Type: {result['project_type_label']}")
+    print(f"Task Type: {result['task_type_label']}")
+    print(f"T-Shirt Size: {result['t_shirt_size']}")
+    print(f"Story Points: {result['story_points']}")
+    print(f"Complexity: {result['raw_complexity']}/10 raw → {result['adjusted_complexity']}/10 adjusted")
+    print(f"Scale Factor: {result['scale_factor']}")
+    print("\nManual Development Time Breakdown:")
+    workflow = result['manual_workflow']
+    print(f"  1. Planning & Design:        {workflow['planning_design']:6.1f} min ({workflow['planning_design']/60:.2f}h)")
+    print(f"  2. Implementation:           {workflow['implementation']:6.1f} min ({workflow['implementation']/60:.2f}h)")
+    print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
+    print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
+    print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
+    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  {'─' * 50}")
+    print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
+    print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
+
+    # Example 2: Refactor - Serverless
+    print("\n" + "=" * 70)
+    print("Example 2: Refactor - Serverless (AWS Lambda)")
+    print("=" * 70)
+    result = estimator.estimate_ticket(
+        title="Optimize Lambda cold start and improve DynamoDB query patterns",
+        description="Reduce cold start time and optimize DynamoDB query patterns",
+        project_type="serverless",
+        complexity_scores={
+            'scope_size': 5,
+            'technical_complexity': 6,
+            'testing_requirements': 6,
+            'risk_and_unknowns': 5,
+            'dependencies': 6
+        }
+    )
+
+    print(f"Project Type: {result['project_type_label']}")
+    print(f"Task Type: {result['task_type_label']}")
+    print(f"T-Shirt Size: {result['t_shirt_size']}")
+    print(f"Story Points: {result['story_points']}")
+    print(f"Complexity: {result['raw_complexity']}/10 raw → {result['adjusted_complexity']}/10 adjusted")
+    print(f"Scale Factor: {result['scale_factor']}")
+    print("\nManual Development Time Breakdown:")
+    workflow = result['manual_workflow']
+    print(f"  1. Planning & Design:        {workflow['planning_design']:6.1f} min ({workflow['planning_design']/60:.2f}h)")
+    print(f"  2. Implementation:           {workflow['implementation']:6.1f} min ({workflow['implementation']/60:.2f}h)")
+    print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
+    print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
+    print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
+    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  {'─' * 50}")
+    print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
+    print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
+
+    # Example 3: Net-New Feature - Frontend
+    print("\n" + "=" * 70)
+    print("Example 3: Net-New Feature - Frontend (React)")
+    print("=" * 70)
+    result = estimator.estimate_ticket(
+        title="Create new dashboard widget with real-time data",
+        description="Build a new widget component that displays real-time metrics",
+        project_type="frontend",
+        complexity_scores={
+            'scope_size': 4,
+            'technical_complexity': 4,
+            'testing_requirements': 4,
+            'risk_and_unknowns': 4,
+            'dependencies': 4
+        }
+    )
+
+    print(f"Project Type: {result['project_type_label']}")
+    print(f"Task Type: {result['task_type_label']}")
+    print(f"T-Shirt Size: {result['t_shirt_size']}")
+    print(f"Story Points: {result['story_points']}")
+    print(f"Complexity: {result['raw_complexity']}/10 raw → {result['adjusted_complexity']}/10 adjusted")
+    print(f"Scale Factor: {result['scale_factor']}")
+    print("\nManual Development Time Breakdown:")
+    workflow = result['manual_workflow']
+    print(f"  1. Planning & Design:        {workflow['planning_design']:6.1f} min ({workflow['planning_design']/60:.2f}h)")
+    print(f"  2. Implementation:           {workflow['implementation']:6.1f} min ({workflow['implementation']/60:.2f}h)")
+    print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
+    print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
+    print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
+    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  {'─' * 50}")
+    print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
+    print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
+
+    # Example 4: Enhancement - Full-Stack with infrastructure changes
+    print("\n" + "=" * 70)
+    print("Example 4: Enhancement - Full-Stack (with infra changes)")
+    print("=" * 70)
+    result = estimator.estimate_ticket(
+        title="Add user notifications system with email + SMS + in-app alerts",
+        description="Implement comprehensive notification system across all channels",
+        project_type="fullstack",
+        complexity_scores={
+            'scope_size': 8,
+            'technical_complexity': 7,
+            'testing_requirements': 8,
+            'risk_and_unknowns': 7,
+            'dependencies': 8
+        },
+        has_infrastructure_changes=True
+    )
+
+    print(f"Project Type: {result['project_type_label']}")
+    print(f"Task Type: {result['task_type_label']}")
+    print(f"T-Shirt Size: {result['t_shirt_size']}")
+    print(f"Story Points: {result['story_points']}")
+    print(f"Complexity: {result['raw_complexity']}/10 raw → {result['adjusted_complexity']}/10 adjusted")
+    print(f"Scale Factor: {result['scale_factor']}")
+    print(f"Infrastructure Changes: {result['has_infrastructure_changes']}")
+    print("\nManual Development Time Breakdown:")
+    workflow = result['manual_workflow']
+    print(f"  1. Planning & Design:        {workflow['planning_design']:6.1f} min ({workflow['planning_design']/60:.2f}h)")
+    print(f"  2. Implementation:           {workflow['implementation']:6.1f} min ({workflow['implementation']/60:.2f}h)")
+    print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
+    print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
+    print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
+    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h) [with infra]")
+    print(f"  {'─' * 50}")
+    print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
+    print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
+
+    # Example 5: Enhancement with Database Changes - Overhead Detection
+    print("\n" + "=" * 70)
+    print("Example 5: Enhancement with DB Changes - Monolithic")
+    print("=" * 70)
+    result = estimator.estimate_ticket(
+        title="Add user preferences table with migration",
+        description="Create new user_preferences table to store user settings. Need database migration to create table with columns: user_id, preference_key, preference_value, created_at, updated_at. Add index on user_id.",
+        project_type="monolithic",
+        complexity_scores={
+            'scope_size': 4,
+            'technical_complexity': 3,
+            'testing_requirements': 4,
+            'risk_and_unknowns': 3,
+            'dependencies': 4
+        }
+    )
+
+    print(f"Project Type: {result['project_type_label']}")
+    print(f"Task Type: {result['task_type_label']}")
+    print(f"T-Shirt Size: {result['t_shirt_size']}")
+    print(f"Story Points: {result['story_points']}")
+    print(f"Complexity: {result['raw_complexity']}/10 raw → {result['adjusted_complexity']}/10 adjusted")
+    print(f"Scale Factor: {result['scale_factor']}")
+    print("\nManual Development Time Breakdown:")
+    workflow = result['manual_workflow']
+    print(f"  1. Planning & Design:        {workflow['planning_design']:6.1f} min ({workflow['planning_design']/60:.2f}h)")
+    print(f"  2. Implementation:           {workflow['implementation']:6.1f} min ({workflow['implementation']/60:.2f}h)")
+    print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
+    print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
+    print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
+    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  {'─' * 50}")
+    print(f"  Subtotal (workflow):         {workflow['total_hours']:.2f}h")
+
+    # Show overhead activities
+    overhead = result['overhead_activities']
+    if overhead['count'] > 0:
+        print(f"\nOverhead Activities Detected: {overhead['count']}")
+        for activity in overhead['detected']:
+            print(f"  • {activity['label']}: +{activity['additional_minutes']} min")
+            print(f"    Reason: {activity['rationale']}")
+            if activity['matched_keywords']:
+                print(f"    Keywords: {', '.join(activity['matched_keywords'])}")
+        print(f"  Total Overhead: {overhead['total_overhead_minutes']} min ({overhead['total_overhead_hours']}h)")
+
+    totals = result['total_including_overhead']
+    print(f"\n  {'─' * 50}")
+    print(f"  TOTAL (with overhead):       {totals['total_hours_calculated']:.2f}h")
+    print(f"  TOTAL (rounded to bucket):   {totals['total_hours_rounded']}h")
+
+    print("\n" + "=" * 70)
+    print("END OF EXAMPLES")
+    print("=" * 70 + "\n")
