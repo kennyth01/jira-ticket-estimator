@@ -1,11 +1,11 @@
 ---
 name: Jira Ticket Estimator
-description: This skill should be used when estimating manual development time for Jira tickets. It provides T-shirt sizes, story points, and phase-by-phase time breakdowns based on task type classification, complexity scoring, and project architecture (monolithic/serverless/frontend/fullstack/mobile).
+description: This skill should be used when estimating development time for Jira tickets. It provides both manual and AI-assisted estimates with T-shirt sizes, story points, and phase-by-phase time breakdowns based on task type classification, complexity scoring, and project architecture (monolithic/serverless/frontend/fullstack/mobile).
 ---
 
 # Jira Ticket Estimator
 
-Estimate manual development time for Jira tickets using a 6-phase workflow that mirrors real development processes.
+Estimate manual and AI-assisted development time for Jira tickets using comprehensive workflow models that mirror real development processes.
 
 ## When to Use This Skill
 
@@ -14,6 +14,7 @@ Invoke when:
 - Sprint planning requires story point assignments
 - Stakeholders need time estimates for features/bugs/refactors
 - Comparing estimates across different project types
+- Understanding time savings with AI-assisted development
 
 ## Inputs
 
@@ -124,7 +125,7 @@ result = estimator.estimate_ticket(
 print(json.dumps(result, indent=2))
 ```
 
-Script outputs JSON with complete estimate breakdown including detected overhead activities.
+Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected overhead activities.
 
 ### 6. Parse and Format Results
 
@@ -133,7 +134,9 @@ Extract from JSON output:
 - T-shirt size (XS/S/M/L/XL)
 - Story points (Fibonacci)
 - Raw and adjusted complexity scores
-- Phase-by-phase time breakdown
+- Manual workflow phase-by-phase time breakdown
+- AI-assisted workflow phase-by-phase time breakdown
+- Time savings comparison
 - Total time (calculated and rounded)
 
 ### 7. Present Estimate to User
@@ -159,7 +162,28 @@ Format output as markdown table:
 | 4. Testing | X min | <percentage>% of implementation |
 | 5. Code Review & Revisions | X min | <description> |
 | 6. Deploy to Test + Verification | X min | <infra changes: yes/no> |
-| **Subtotal (workflow)** | **X.XXh** | Sum of 6 phases |
+| **TOTAL (calculated)** | **X.XXh** | |
+| **TOTAL (rounded)** | **Xh** | Snapped to bucket |
+
+## AI-Assisted Development Time Breakdown
+
+| Phase | Time | Details |
+|-------|------|---------|
+| 1. AI Planning | X min | AI generates architecture, API contracts (X% savings) |
+| 2. AI Implementation | X min | AI generates code, tests (X% savings) |
+| 3. AI Review | X min | AI reviews for bugs, improvements |
+| 4. Human Review & Testing | X min | Validate AI output, run tests |
+| 5. Iterations & Vibe Coding | X min | Fix AI mistakes, refine prompts |
+| 6. Deploy to Test | X min | Deploy to test environment |
+| 7. Test Verification | X min | Smoke tests, E2E verification |
+| **TOTAL (calculated)** | **X.XXh** | |
+| **TOTAL (rounded)** | **Xh** | Snapped to bucket |
+
+## Time Savings
+
+- **Manual Development**: X.XXh → Xh rounded
+- **AI-Assisted Development**: X.XXh → Xh rounded
+- **Time Savings**: X.XXh (XX.X% faster)
 
 ## Overhead Activities
 
@@ -174,7 +198,7 @@ Format output as markdown table:
 | **TOTAL (with overhead)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
-*If no overheads: Show workflow total as final total*
+*If no overheads: Show workflow totals as final totals*
 
 ## Complexity Scores
 
@@ -201,7 +225,7 @@ Format output as markdown table:
 1. Review estimate with stakeholders
 2. Validate complexity scores and task type
 3. Approval gate: proceed, modify scope, or reject
-4. If approved, execute following 5-phase workflow
+4. Choose development approach (manual vs AI-assisted)
 5. Track actual vs estimated time for calibration
 ```
 
@@ -255,14 +279,29 @@ Estimates follow real development phases:
 5. **Code Review & Revisions** - Peer review, addressing feedback
 6. **Deployment to Test + Verification** - Deploy, smoke tests, verification
 
+## The 7-Phase AI-Assisted Workflow
+
+AI-assisted development follows these phases:
+
+1. **AI Planning** - AI generates architecture, DB schema, API contracts (60-70% time savings)
+2. **AI Implementation** - AI generates code, controllers, models, tests (60-70% time savings)
+3. **AI Review** - AI reviews generated code for bugs and improvements
+4. **Human Review & Testing** - Developer validates AI output and runs tests
+5. **Iterations & Vibe Coding** - Fix AI mistakes, regenerate code, refine prompts
+6. **Deploy to Test** - Deploy to test environment
+7. **Test Verification** - Smoke tests, E2E verification, validation
+
+Typical time savings: 40-50% compared to manual development.
+
 ## Configuration
 
 All parameters stored in `heuristics.json`:
 
 ### Customizable per Project Type
-- Workflow phase base times
+- Workflow phase base times (manual and AI-assisted)
 - Testing percentages
 - Deploy times with/without infrastructure changes
+- AI time savings percentages
 
 ### Overhead Activities
 - Database change management (+20 min by default)
@@ -344,6 +383,26 @@ Example adjustment:
 | 6. Deploy to Test + Verification | 30 min | Deploy, smoke test |
 | **Total (calculated)** | **1.93h** | |
 | **Total (rounded)** | **2h** | Snapped to bucket |
+
+## AI-Assisted Development Time Breakdown
+
+| Phase | Time | Details |
+|-------|------|---------|
+| 1. AI Planning | 7 min | AI generates fix approach (70% savings) |
+| 2. AI Implementation | 6 min | AI generates validation fix (65% savings) |
+| 3. AI Review | 5 min | AI reviews for edge cases |
+| 4. Human Review & Testing | 8 min | Validate fix, run tests |
+| 5. Iterations & Vibe Coding | 3 min | Refine if needed |
+| 6. Deploy to Test | 30 min | Deploy to test |
+| 7. Test Verification | 10 min | Verify fix works |
+| **Total (calculated)** | **1.15h** | |
+| **Total (rounded)** | **1h** | Snapped to bucket |
+
+## Time Savings
+
+- **Manual Development**: 1.93h → 2h rounded
+- **AI-Assisted Development**: 1.15h → 1h rounded
+- **Time Savings**: 0.78h (40% faster)
 ```
 
 7. Track in backlog for calibration
@@ -351,6 +410,8 @@ Example adjustment:
 ## Notes
 
 - **Estimates are predictive** - refine after reconnaissance
+- **Both workflows calculated automatically** - choose based on your development approach
+- **AI-assisted estimates assume**: Effective prompt engineering, experienced with AI tools, quality review process
 - **Overhead activities are configurable** - enable/disable based on your processes
 - **Track actual vs estimated** by phase and overhead for calibration
 - **Adjust `heuristics.json`** based on team historical data
