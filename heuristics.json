@@ -47,7 +47,7 @@
           "deployment_verification": {
             "label": "Deployment to Test + Verification",
             "description": "Deploy to test environment, smoke tests, verification",
-            "base_minutes": 60,
+            "base_minutes": 45,
             "infrastructure_changes_minutes": 80,
             "scales_with_complexity": false
           }
