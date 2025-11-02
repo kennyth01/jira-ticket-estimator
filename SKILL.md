@@ -180,13 +180,9 @@ Format output as markdown table:
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
-## Time Savings
-
-- **Manual Development**: X.XXh → Xh rounded
-- **AI-Assisted Development**: X.XXh → Xh rounded
-- **Time Savings**: X.XXh (XX.X% faster)
-
 ## Overhead Activities
+
+*Overhead activities apply to BOTH manual and AI-assisted workflows*
 
 *If any overhead activities detected:*
 
@@ -195,12 +191,17 @@ Format output as markdown table:
 | Database Change Management | +20 min | Create DBA ticket + Confluence doc |
 | Cross-Team Coordination | +30 min | Coordinate with ops/infrastructure team |
 | Security Review | +30 min | Submit review + address findings |
-| **Total Overhead** | **+X min** | |
+| **Total Overhead** | **+X min (X.XXh)** | |
 
-| **TOTAL (with overhead)** | **X.XXh** | |
-| **TOTAL (rounded)** | **Xh** | Snapped to bucket |
+*If no overheads detected: Skip this section*
 
-*If no overheads: Show workflow totals as final totals*
+## Time Savings
+
+- **Manual Development**: X.XXh (workflow) + X.XXh (overhead) = X.XXh → Xh rounded
+- **AI-Assisted Development**: X.XXh (workflow) + X.XXh (overhead) = X.XXh → Xh rounded
+- **Time Savings**: X.XXh (XX.X% faster)
+
+*Note: Overhead time is the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
 
 ## Complexity Scores
 

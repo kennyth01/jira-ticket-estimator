@@ -241,11 +241,21 @@ See `references/task-type-classification.md` for complete classification guide.
 | **Total (calculated)** | **4.88h** | |
 | **Total (rounded)** | **6h** | Snapped to bucket |
 
+## Overhead Activities
+
+*Overhead activities apply to both manual and AI-assisted workflows*
+
+| Activity | Time | Reason |
+|----------|------|--------|
+| *No overhead detected in this example* | - | - |
+
 ## Time Savings
 
 - Manual Development: 8.22h → 8h rounded
 - AI-Assisted Development: 4.88h → 6h rounded
 - Time Savings: 3.34h (40.6% faster)
+
+*Note: If overhead activities were detected, they would be added to both workflow totals*
 
 ## Complexity Scores
 
@@ -453,6 +463,11 @@ AI-assisted development typically provides 40-50% time savings:
 | Code Review | 100% | Iterations (20-35min) | 60-80% faster |
 | Deploy | 100% | 100% (same time) | 0% |
 | Verification | 100% | ~50% (faster smoke tests) | ~50% faster |
+| **Overhead Activities** | **100%** | **100% (same time)** | **0%** |
+
+**Important**: Overhead activities (DBA tickets, cross-team coordination, security reviews) take the same time regardless of AI usage. This reduces overall time savings percentage.
+
+**Example**: A task with 10h manual workflow and 5h AI-assisted workflow (50% savings) plus 1h overhead becomes 11h manual vs 6h AI-assisted (45% overall savings).
 
 **Note**: AI-assisted savings assume:
 - Access to AI coding tools (Claude, Cursor, GitHub Copilot)

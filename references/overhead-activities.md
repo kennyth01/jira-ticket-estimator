@@ -9,10 +9,32 @@ Overhead activities are extra tasks that must be completed as part of the ticket
 ### Key Characteristics
 
 - **Additive**: Added on top of the 7-phase workflow time
+- **Applies to BOTH workflows**: Overhead time is added to both manual AND AI-assisted workflows
+- **NOT accelerated by AI**: Creating DBA tickets or coordinating with teams takes the same time regardless of AI usage
 - **Configurable**: Enable/disable per team's processes
 - **Automatic Detection**: Triggered by keywords in title/description/files
 - **Task-Type Aware**: Some overheads only apply to certain task types
 - **Non-Stacking**: Each overhead applied once per ticket, regardless of how many times criteria match
+
+### Why Overhead Isn't Accelerated by AI
+
+While AI can significantly speed up planning, coding, and testing, it **cannot** accelerate:
+- Creating coordination tickets for other teams
+- Waiting for DBA to execute database changes
+- Meeting with DevOps to explain deployment process
+- Getting security/legal reviews approved
+
+**Example**:
+```
+Manual workflow:         10.5h
+AI-assisted workflow:     5.2h  (50% savings on workflow phases)
+Overhead activities:     +0.8h  (same for both)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Manual total:            11.3h
+AI-assisted total:        6.0h  (47% savings overall - lower due to overhead)
+```
+
+The presence of overhead activities **reduces the overall time savings percentage** because a portion of the work cannot be accelerated.
 
 ## Default Overhead Activities
 
