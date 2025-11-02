@@ -5,7 +5,7 @@ description: This skill should be used when estimating development time for Jira
 
 # Jira Ticket Estimator
 
-Estimate manual and AI-assisted development time for Jira tickets using comprehensive workflow models that mirror real development processes.
+Estimate manual and AI-assisted development time for Jira tickets using a 7-phase manual workflow and 7-phase AI-assisted workflow that mirror real development processes.
 
 ## When to Use This Skill
 
@@ -161,7 +161,8 @@ Format output as markdown table:
 | 3. Self Review | 30 min | Review own code before testing |
 | 4. Testing | X min | <percentage>% of implementation |
 | 5. Code Review & Revisions | X min | <description> |
-| 6. Deploy to Test + Verification | X min | <infra changes: yes/no> |
+| 6. Deployment to Test | X min | Deploy to test environment |
+| 7. Verification | X min | Smoke tests, verification (scales with complexity) |
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
@@ -192,6 +193,7 @@ Format output as markdown table:
 | Activity | Time | Reason |
 |----------|------|--------|
 | Database Change Management | +20 min | Create DBA ticket + Confluence doc |
+| Cross-Team Coordination | +30 min | Coordinate with ops/infrastructure team |
 | Security Review | +30 min | Submit review + address findings |
 | **Total Overhead** | **+X min** | |
 
@@ -244,31 +246,36 @@ Five project types with customized workflow phases:
 ### Monolithic (Laravel, Rails, Django)
 - Planning: 90 min @ complexity 5
 - Testing: 40% of implementation
-- Deploy: 30 min (60 min with infra)
+- Deployment to Test: 25 min (50 min with infra)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Serverless (AWS Lambda, Cloud Functions)
 - Planning: 120 min @ complexity 5 (more for IaC)
 - Testing: 35% of implementation
-- Deploy: 45 min (90 min with infra)
+- Deployment to Test: 25 min (60 min with infra)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Frontend (React, Vue, Angular)
 - Planning: 75 min @ complexity 5
 - Testing: 45% of implementation (includes E2E)
-- Deploy: 25 min (45 min with infra)
+- Deployment to Test: 25 min (35 min with infra)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Full-Stack (Backend + Frontend)
 - Planning: 120 min @ complexity 5
 - Testing: 50% of implementation (most comprehensive)
-- Deploy: 45 min (90 min with infra)
+- Deployment to Test: 25 min (60 min with infra)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Mobile (Android, iOS, React Native, Flutter)
 - Planning: 100 min @ complexity 5 (screen flows, offline support)
 - Testing: 50% of implementation (device testing critical)
-- Deploy: 35 min (50 min with infra) - TestFlight/Internal Testing
+- Deployment to Test: 25 min (40 min with infra) - TestFlight/Internal Testing
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
-## The 6-Phase Manual Workflow
+## The 7-Phase Manual Workflow
 
 Estimates follow real development phases:
 
@@ -277,7 +284,8 @@ Estimates follow real development phases:
 3. **Self Review** - Review own code for bugs, edge cases, code quality
 4. **Testing** - Unit, integration, E2E tests
 5. **Code Review & Revisions** - Peer review, addressing feedback
-6. **Deployment to Test + Verification** - Deploy, smoke tests, verification
+6. **Deployment to Test** - Deploy to test environment (fixed time, infra-aware)
+7. **Verification** - Smoke tests, verification (scales with complexity)
 
 ## The 7-Phase AI-Assisted Workflow
 
@@ -305,6 +313,7 @@ All parameters stored in `heuristics.json`:
 
 ### Overhead Activities
 - Database change management (+20 min by default)
+- Cross-team coordination (+30 min by default)
 - Security review (disabled by default)
 - Legal/compliance review (disabled by default)
 - Documentation update (disabled by default)
@@ -380,7 +389,8 @@ Example adjustment:
 | 3. Self Review | 30 min | Review own code before testing |
 | 4. Testing | 6 min | Unit tests for validation |
 | 5. Code Review & Revisions | 11 min | Peer review |
-| 6. Deploy to Test + Verification | 30 min | Deploy, smoke test |
+| 6. Deployment to Test | 25 min | Deploy to test environment |
+| 7. Verification | 5 min | Smoke test, verify fix |
 | **Total (calculated)** | **1.93h** | |
 | **Total (rounded)** | **2h** | Snapped to bucket |
 
@@ -393,7 +403,7 @@ Example adjustment:
 | 3. AI Review | 5 min | AI reviews for edge cases |
 | 4. Human Review & Testing | 8 min | Validate fix, run tests |
 | 5. Iterations & Vibe Coding | 3 min | Refine if needed |
-| 6. Deploy to Test | 30 min | Deploy to test |
+| 6. Deploy to Test | 25 min | Deploy to test environment |
 | 7. Test Verification | 10 min | Verify fix works |
 | **Total (calculated)** | **1.15h** | |
 | **Total (rounded)** | **1h** | Snapped to bucket |

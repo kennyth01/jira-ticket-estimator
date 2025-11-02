@@ -5,7 +5,7 @@ A Claude Code skill for estimating manual and AI-assisted development time for J
 ## Features
 
 - **Dual Workflow Estimation**: Get both manual and AI-assisted development time estimates
-- **6-Phase Manual Workflow**: Planning & Design → Implementation → Self Review → Testing → Code Review & Revisions → Deployment to Test + Verification
+- **7-Phase Manual Workflow**: Planning & Design → Implementation → Self Review → Testing → Code Review & Revisions → Deployment to Test → Verification
 - **7-Phase AI-Assisted Workflow**: AI Planning → AI Implementation → AI Review → Human Review & Testing → Iterations & Vibe Coding → Deploy to Test → Test Verification
 - **5 Project Types**: Monolithic, Serverless, Frontend, Full-Stack, Mobile (iOS/Android/React Native/Flutter)
 - **Automatic Task Classification**: Net-New, Enhancement, Refactor, Bug Fix, Spike
@@ -129,31 +129,36 @@ Project type: mobile
 - Best for: Traditional MVC applications with integrated databases
 - Planning: 90 min @ complexity 5
 - Testing: 40% of implementation time
-- Deploy: 30 min (60 min with infrastructure changes)
+- Deployment to Test: 25 min (50 min with infrastructure changes)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Serverless (AWS Lambda, Cloud Functions)
 - Best for: Event-driven architectures with cloud functions
 - Planning: 120 min @ complexity 5 (includes IaC planning)
 - Testing: 35% of implementation time
-- Deploy: 45 min (90 min with infrastructure changes)
+- Deployment to Test: 25 min (60 min with infrastructure changes)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Frontend (React, Vue, Angular)
 - Best for: Single-page applications and UI components
 - Planning: 75 min @ complexity 5
 - Testing: 45% of implementation time (includes E2E)
-- Deploy: 25 min (45 min with infrastructure changes)
+- Deployment to Test: 25 min (35 min with infrastructure changes)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Full-Stack (Backend + Frontend)
 - Best for: Features spanning both backend and frontend
 - Planning: 120 min @ complexity 5
 - Testing: 50% of implementation time (most comprehensive)
-- Deploy: 45 min (90 min with infrastructure changes)
+- Deployment to Test: 25 min (60 min with infrastructure changes)
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ### Mobile (iOS, Android, React Native, Flutter)
 - Best for: Native and cross-platform mobile applications
 - Planning: 100 min @ complexity 5 (screen flows, offline support)
 - Testing: 50% of implementation time (device testing critical)
-- Deploy: 35 min (50 min with infrastructure changes) - TestFlight/Internal Testing
+- Deployment to Test: 25 min (40 min with infrastructure changes) - TestFlight/Internal Testing
+- Verification: 20 min @ complexity 5 (scales with complexity)
 
 ## Complexity Factors
 
@@ -217,8 +222,9 @@ See `references/task-type-classification.md` for complete classification guide.
 | 3. Self Review | 30 min | Review own code before testing |
 | 4. Testing | 84 min | Unit, integration tests |
 | 5. Code Review & Revisions | 42 min | Peer review, address feedback |
-| 6. Deploy to Test + Verification | 60 min | Deploy, smoke tests, verification |
-| **Total (calculated)** | **8.48h** | |
+| 6. Deployment to Test | 25 min | Deploy to test environment |
+| 7. Verification | 19 min | Smoke tests, verification |
+| **Total (calculated)** | **8.22h** | |
 | **Total (rounded)** | **8h** | Snapped to bucket |
 
 ## AI-Assisted Development Time Breakdown
@@ -237,9 +243,9 @@ See `references/task-type-classification.md` for complete classification guide.
 
 ## Time Savings
 
-- Manual Development: 8.48h → 8h rounded
+- Manual Development: 8.22h → 8h rounded
 - AI-Assisted Development: 4.88h → 6h rounded
-- Time Savings: 2.48h (42.5% faster)
+- Time Savings: 3.34h (40.6% faster)
 
 ## Complexity Scores
 
@@ -271,6 +277,10 @@ The skill automatically detects project-specific overhead processes:
 **Database Change Management** (+20 min)
 - Detected by keywords: migration, database, table, schema, sql
 - Process: Create DBA ticket, execute on test/prod, document
+
+**Cross-Team Coordination** (+30 min)
+- Detected by keywords: devops, ops team, infrastructure team, collab with, coordinate with, deployment process
+- Process: Create coordination tickets, discuss with other teams, explain changes
 
 ### Disabled by Default (enable in heuristics.json)
 
@@ -361,8 +371,8 @@ To customize estimates for your team:
 
 ```
 Ticket: PROJ-123 (Bug Fix, Monolithic)
-Estimated: 2h (Planning: 23min, Impl: 16min, Testing: 6min, Review: 11min, Deploy: 30min, Self Review: 30min)
-Actual:    2.5h (Planning: 30min, Impl: 20min, Testing: 10min, Review: 15min, Deploy: 25min, Self Review: 30min)
+Estimated: 2h (Planning: 23min, Impl: 16min, Self Review: 30min, Testing: 6min, Review: 11min, Deploy: 25min, Verification: 5min)
+Actual:    2.5h (Planning: 30min, Impl: 20min, Self Review: 30min, Testing: 10min, Review: 15min, Deploy: 25min, Verification: 5min)
 
 Adjustment: Increase planning_design base from 90 to 100 minutes
 ```
@@ -496,5 +506,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-10-27
-**Version**: 2.0 (with AI-assisted workflow and mobile support)
+**Last Updated**: 2025-11-02
+**Version**: 2.1 (separated deployment and verification phases)

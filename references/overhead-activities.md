@@ -4,11 +4,11 @@ Additional time for project-specific processes and workflows that occur outside 
 
 ## Overview
 
-Overhead activities are extra tasks that must be completed as part of the ticket but aren't captured in the standard 5-phase workflow. These are typically organizational processes, compliance requirements, or coordination activities.
+Overhead activities are extra tasks that must be completed as part of the ticket but aren't captured in the standard 7-phase workflow. These are typically organizational processes, compliance requirements, or coordination activities.
 
 ### Key Characteristics
 
-- **Additive**: Added on top of the 5-phase workflow time
+- **Additive**: Added on top of the 7-phase workflow time
 - **Configurable**: Enable/disable per team's processes
 - **Automatic Detection**: Triggered by keywords in title/description/files
 - **Task-Type Aware**: Some overheads only apply to certain task types
@@ -56,7 +56,41 @@ Overhead activities are extra tasks that must be completed as part of the ticket
 
 ---
 
-### 2. Security Review Process ❌ Disabled by Default
+### 2. Cross-Team Coordination ✅ Enabled by Default
+
+**Time**: +30 minutes
+**Applies To**: Net-New, Enhancement, Refactor, Bug Fix
+
+**Process**:
+1. Create coordination ticket for operations/infrastructure team
+2. Discuss and explain deployment/removal process
+3. Coordinate with other teams for approvals
+4. Document handoff and expectations
+
+**Detection Keywords**:
+- Team names: devops, infrastructure team, ops team, operations team, platform team, sre team, site reliability
+- Collaboration: collab with, collaborate with, coordinate with, work with team, discuss with, explain to, sync with, align with
+- Processes: deployment process, removal process, rollout process, infrastructure change, server change, environment change, create ticket for, coordinate deployment, handoff to
+
+**Example Tickets**:
+- "Remove old API endpoint - create ops ticket, collab with platform team to discuss and explain the removal process"
+- "Deploy new feature - coordinate with DevOps team for infrastructure changes"
+- "Update server configuration - work with infrastructure team on deployment"
+- "Database migration - create coordination ticket and sync with operations team"
+
+**Configuration**:
+```json
+{
+  "cross_team_coordination": {
+    "enabled": true,
+    "additional_minutes": 30
+  }
+}
+```
+
+---
+
+### 3. Security Review Process ❌ Disabled by Default
 
 **Time**: +30 minutes
 **Applies To**: Net-New, Enhancement, Refactor
@@ -88,7 +122,7 @@ Overhead activities are extra tasks that must be completed as part of the ticket
 
 ---
 
-### 3. Legal/Compliance Review ❌ Disabled by Default
+### 4. Legal/Compliance Review ❌ Disabled by Default
 
 **Time**: +45 minutes
 **Applies To**: Net-New, Enhancement
@@ -120,7 +154,7 @@ Overhead activities are extra tasks that must be completed as part of the ticket
 
 ---
 
-### 4. Documentation Update ❌ Disabled by Default
+### 5. Documentation Update ❌ Disabled by Default
 
 **Time**: +15 minutes
 **Applies To**: Net-New, Enhancement
@@ -268,9 +302,14 @@ Add new overhead activities to `heuristics.json`:
 
 Multiple overheads can apply to a single ticket:
 
-**Example**: "Add OAuth authentication with database migration"
+**Example 1**: "Add OAuth authentication with database migration"
 - ✅ Database Change Management: +20 min (keywords: "database", "migration")
 - ✅ Security Review: +30 min (keywords: "authentication")
+- **Total Overhead**: +50 minutes
+
+**Example 2**: "Database schema change - create ops ticket and coordinate with infrastructure team"
+- ✅ Database Change Management: +20 min (keywords: "database", "schema")
+- ✅ Cross-Team Coordination: +30 min (keywords: "ops team", "coordinate with", "infrastructure team")
 - **Total Overhead**: +50 minutes
 
 ### Keyword Matching
@@ -396,7 +435,7 @@ This transparency helps stakeholders understand the full effort.
 - Activities that are often forgotten in estimates
 
 Don't create overheads for:
-- Activities already in the 5 phases
+- Activities already in the 7 phases
 - One-off edge cases
 - Activities taking <10 minutes
 

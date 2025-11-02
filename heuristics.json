@@ -44,12 +44,20 @@
             "max_minutes": 120,
             "scales_with_complexity": true
           },
-          "deployment_verification": {
-            "label": "Deployment to Test + Verification",
-            "description": "Deploy to test environment, smoke tests, verification",
-            "base_minutes": 45,
-            "infrastructure_changes_minutes": 80,
+          "deployment_to_test": {
+            "label": "Deployment to Test",
+            "description": "Deploy to test environment",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 50,
             "scales_with_complexity": false
+          },
+          "verification": {
+            "label": "Verification",
+            "description": "Smoke tests, verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -142,12 +150,20 @@
             "max_minutes": 90,
             "scales_with_complexity": true
           },
-          "deployment_verification": {
-            "label": "Deployment to Test + Verification",
-            "description": "Deploy via CI/CD, CloudWatch monitoring, API testing",
-            "base_minutes": 45,
-            "infrastructure_changes_minutes": 90,
+          "deployment_to_test": {
+            "label": "Deployment to Test",
+            "description": "Deploy via CI/CD",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 60,
             "scales_with_complexity": false
+          },
+          "verification": {
+            "label": "Verification",
+            "description": "CloudWatch monitoring, API testing",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -240,12 +256,20 @@
             "max_minutes": 90,
             "scales_with_complexity": true
           },
-          "deployment_verification": {
-            "label": "Deployment to Test + Verification",
-            "description": "Build, deploy to test environment, cross-browser verification",
+          "deployment_to_test": {
+            "label": "Deployment to Test",
+            "description": "Build, deploy to test environment",
             "base_minutes": 25,
-            "infrastructure_changes_minutes": 45,
+            "infrastructure_changes_minutes": 35,
             "scales_with_complexity": false
+          },
+          "verification": {
+            "label": "Verification",
+            "description": "Cross-browser verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -338,12 +362,20 @@
             "max_minutes": 150,
             "scales_with_complexity": true
           },
-          "deployment_verification": {
-            "label": "Deployment to Test + Verification",
-            "description": "Deploy backend + frontend, end-to-end verification",
-            "base_minutes": 45,
-            "infrastructure_changes_minutes": 90,
+          "deployment_to_test": {
+            "label": "Deployment to Test",
+            "description": "Deploy backend + frontend",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 60,
             "scales_with_complexity": false
+          },
+          "verification": {
+            "label": "Verification",
+            "description": "End-to-end verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -436,12 +468,20 @@
             "max_minutes": 100,
             "scales_with_complexity": true
           },
-          "deployment_verification": {
-            "label": "Deployment to Test + Verification",
-            "description": "TestFlight/Internal Testing deployment, device verification",
-            "base_minutes": 35,
-            "infrastructure_changes_minutes": 50,
+          "deployment_to_test": {
+            "label": "Deployment to Test",
+            "description": "TestFlight/Internal Testing deployment",
+            "base_minutes": 25,
+            "infrastructure_changes_minutes": 40,
             "scales_with_complexity": false
+          },
+          "verification": {
+            "label": "Verification",
+            "description": "Device verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -572,6 +612,29 @@
           },
           "applies_to_task_types": ["net_new", "enhancement"],
           "notes": "Enable if documentation updates are tracked separately from code"
+        },
+        "cross_team_coordination": {
+          "enabled": true,
+          "label": "Cross-Team Coordination",
+          "description": "Extra time for coordinating with other teams (DevOps, infrastructure, operations, platform, etc.)",
+          "additional_minutes": 30,
+          "rationale": "Process: Create coordination tickets + discuss deployment/removal process + explain changes + get approvals",
+          "detection": {
+            "keywords": [
+              "devops", "infrastructure team", "ops team", "operations team",
+              "platform team", "sre team", "site reliability",
+              "collab with", "collaborate with", "coordinate with", "work with team",
+              "discuss with", "explain to", "sync with", "align with",
+              "deployment process", "removal process", "rollout process",
+              "infrastructure change", "server change", "environment change",
+              "create ticket for", "coordinate deployment", "handoff to"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": false
+          },
+          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
+          "notes": "Enable if cross-team coordination is required for infrastructure, deployment, or operational tasks"
         }
       },
       "notes": [

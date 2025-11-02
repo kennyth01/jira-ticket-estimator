@@ -65,7 +65,24 @@ implementationTime = 2.1 × 12.5 = 26.25 minutes
 implementationTime = 6.5 × 30 = 195 minutes (3.25 hours)
 ```
 
-## Phase 3: Testing
+## Phase 3: Self Review
+
+**Fixed time** (does not scale with complexity)
+
+```
+selfReviewTime = projectType.self_review.base_minutes
+```
+
+**Base time**: 30 minutes (all project types)
+
+Self review happens before testing to catch obvious bugs, edge cases, and code quality issues.
+
+**Example**: All project types
+```
+selfReviewTime = 30 minutes
+```
+
+## Phase 4: Testing
 
 **Percentage of implementation time** (varies by project type)
 
@@ -87,7 +104,7 @@ testingTime = implementationTime × (testingPercentage / 100)
 testingTime = 120 × 0.45 = 54 minutes
 ```
 
-## Phase 4: Code Review & Revisions
+## Phase 5: Code Review & Revisions
 
 **Scales with complexity**
 
@@ -109,15 +126,15 @@ codeReviewTime = projectType.code_review.base_minutes_at_complexity_5 × scaleFa
 codeReviewTime = 40 × (4.5 / 5) = 40 × 0.9 = 36 minutes
 ```
 
-## Phase 5: Deployment to Test + Verification
+## Phase 6: Deployment to Test
 
 **Fixed time** (does not scale with complexity)
 
 ```
 if (hasInfrastructureChanges) {
-  deployTime = projectType.deployment_verification.infrastructure_changes_minutes
+  deployTime = projectType.deployment_to_test.infrastructure_changes_minutes
 } else {
-  deployTime = projectType.deployment_verification.base_minutes
+  deployTime = projectType.deployment_to_test.base_minutes
 }
 ```
 
@@ -125,21 +142,45 @@ if (hasInfrastructureChanges) {
 
 | Project Type | Standard | With Infra Changes | Details |
 |--------------|----------|-------------------|---------|
-| Monolithic | 30 min | 60 min | Deploy, smoke tests, DB migrations |
-| Serverless | 45 min | 90 min | CI/CD, CloudWatch, API testing |
-| Frontend | 25 min | 45 min | Build, deploy, cross-browser testing |
-| Full-Stack | 45 min | 90 min | Backend + frontend + integration testing |
+| Monolithic | 25 min | 50 min | Deploy to test environment, DB migrations |
+| Serverless | 25 min | 60 min | CI/CD pipeline execution |
+| Frontend | 25 min | 35 min | Build and deploy |
+| Full-Stack | 25 min | 60 min | Backend + frontend deployment |
+| Mobile | 25 min | 40 min | TestFlight/Internal Testing build |
 
 **Example**: Full-stack with infrastructure changes
 ```
-deployTime = 90 minutes
+deployTime = 60 minutes
+```
+
+## Phase 7: Verification
+
+**Scales with complexity**
+
+```
+verificationTime = projectType.verification.base_minutes_at_complexity_5 × scaleFactor
+```
+
+**Base times by project type** (at complexity 5, scaleFactor = 1.0):
+
+| Project Type | Base Minutes | Range (complexity 1-10) | Details |
+|--------------|--------------|-------------------------|---------|
+| Monolithic | 20 min | 4-40 min | Smoke tests, manual verification |
+| Serverless | 20 min | 4-40 min | CloudWatch logs, API testing |
+| Frontend | 20 min | 4-40 min | Cross-browser testing, visual checks |
+| Full-Stack | 20 min | 4-40 min | End-to-end verification |
+| Mobile | 20 min | 4-40 min | Device verification, gesture testing |
+
+**Example**: Frontend with complexity 3.5
+```
+verificationTime = 20 × (3.5 / 5) = 20 × 0.7 = 14 minutes
 ```
 
 ## Total Time Calculation
 
 ```
-totalTime = planningTime + implementationTime + testingTime +
-            codeReviewTime + deployTime
+totalTime = planningTime + implementationTime + selfReviewTime +
+            testingTime + codeReviewTime + deployTime + verificationTime
 ```
 
 ## Bucket Rounding
@@ -193,21 +234,27 @@ Planning & Design:
 Implementation:
   1.26 × 12.5 = 15.75 minutes
 
+Self Review:
+  30 minutes (fixed)
+
 Testing:
   15.75 × 0.40 = 6.3 minutes
 
 Code Review:
   45 × 0.252 = 11.34 minutes
 
-Deploy + Verify:
-  30 minutes (no infra changes)
+Deployment to Test:
+  25 minutes (no infra changes)
+
+Verification:
+  20 × 0.252 = 5.04 minutes
 
 Total:
-  22.68 + 15.75 + 6.3 + 11.34 + 30 = 86.07 minutes = 1.43 hours
+  22.68 + 15.75 + 30 + 6.3 + 11.34 + 25 + 5.04 = 116.11 minutes = 1.94 hours
 
 Bucket Rounding:
-  1.43h → current bucket = 1h, threshold = 1.25h
-  1.43 > 1.25 → rounds to 2h
+  1.94h → current bucket = 1h, threshold = 1.25h
+  1.94 > 1.25 → rounds to 2h
 
 Final Estimate: 2 hours
 ```
@@ -231,21 +278,27 @@ Planning & Design:
 Implementation:
   6.38 × 22.5 = 143.55 minutes
 
+Self Review:
+  30 minutes (fixed)
+
 Testing:
   143.55 × 0.50 = 71.78 minutes
 
 Code Review:
   60 × 1.276 = 76.56 minutes
 
-Deploy + Verify:
-  90 minutes (with infra changes)
+Deployment to Test:
+  60 minutes (with infra changes)
+
+Verification:
+  20 × 1.276 = 25.52 minutes
 
 Total:
-  153.12 + 143.55 + 71.78 + 76.56 + 90 = 535.01 minutes = 8.92 hours
+  153.12 + 143.55 + 30 + 71.78 + 76.56 + 60 + 25.52 = 560.53 minutes = 9.34 hours
 
 Bucket Rounding:
-  8.92h → current bucket = 8h, threshold = 9.0h
-  8.92 ≤ 9.0 → stays at 8h
+  9.34h → current bucket = 8h, threshold = 9.0h
+  9.34 > 9.0 → rounds to 12h
 
-Final Estimate: 8 hours (1 day)
+Final Estimate: 12 hours (1.5 days)
 ```

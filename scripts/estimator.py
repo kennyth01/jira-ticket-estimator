@@ -241,15 +241,19 @@ class TicketEstimator:
         code_review_base = phases['code_review']['base_minutes_at_complexity_5']
         code_review_time = code_review_base * scale_factor
 
-        # Phase 6: Deployment to Test + Verification (fixed)
+        # Phase 6: Deployment to Test (fixed)
         if has_infrastructure_changes:
-            deploy_time = phases['deployment_verification']['infrastructure_changes_minutes']
+            deploy_time = phases['deployment_to_test']['infrastructure_changes_minutes']
         else:
-            deploy_time = phases['deployment_verification']['base_minutes']
+            deploy_time = phases['deployment_to_test']['base_minutes']
+
+        # Phase 7: Verification (scales with complexity)
+        verification_base = phases['verification']['base_minutes_at_complexity_5']
+        verification_time = verification_base * scale_factor
 
         # Total
         total_minutes = (planning_time + implementation_time + self_review_time +
-                        testing_time + code_review_time + deploy_time)
+                        testing_time + code_review_time + deploy_time + verification_time)
 
         return {
             'planning_design': round(planning_time, 1),
@@ -257,7 +261,8 @@ class TicketEstimator:
             'self_review': round(self_review_time, 1),
             'testing': round(testing_time, 1),
             'code_review': round(code_review_time, 1),
-            'deployment_verification': round(deploy_time, 1),
+            'deployment_to_test': round(deploy_time, 1),
+            'verification': round(verification_time, 1),
             'total_minutes': round(total_minutes, 1),
             'total_hours': round(total_minutes / 60.0, 2),
             'phases': {
@@ -292,11 +297,18 @@ class TicketEstimator:
                     'time_minutes': round(code_review_time, 1),
                     'scales_with_complexity': True
                 },
-                '6_deployment_verification': {
-                    'label': phases['deployment_verification']['label'],
-                    'description': phases['deployment_verification']['description'],
+                '6_deployment_to_test': {
+                    'label': phases['deployment_to_test']['label'],
+                    'description': phases['deployment_to_test']['description'],
                     'time_minutes': round(deploy_time, 1),
-                    'infrastructure_changes': has_infrastructure_changes
+                    'infrastructure_changes': has_infrastructure_changes,
+                    'scales_with_complexity': False
+                },
+                '7_verification': {
+                    'label': phases['verification']['label'],
+                    'description': phases['verification']['description'],
+                    'time_minutes': round(verification_time, 1),
+                    'scales_with_complexity': True
                 }
             }
         }
@@ -352,10 +364,7 @@ class TicketEstimator:
         iterations_time = iterations_base * scale_factor
 
         # Phase 6: Deploy to Test (same as manual deployment)
-        if has_infrastructure_changes:
-            deploy_time = manual_workflow['deployment_verification']
-        else:
-            deploy_time = manual_workflow['deployment_verification']
+        deploy_time = manual_workflow['deployment_to_test']
 
         # Phase 7: Test Verification (fixed or based on infra)
         verification_config = ai_phases['test_verification']
@@ -638,7 +647,8 @@ if __name__ == '__main__':
     print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
-    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
+    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -673,7 +683,8 @@ if __name__ == '__main__':
     print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
-    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
+    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -708,7 +719,8 @@ if __name__ == '__main__':
     print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
-    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
+    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -745,7 +757,8 @@ if __name__ == '__main__':
     print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
-    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h) [with infra]")
+    print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h) [with infra]")
+    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -780,7 +793,8 @@ if __name__ == '__main__':
     print(f"  3. Self Review:              {workflow['self_review']:6.1f} min ({workflow['self_review']/60:.2f}h)")
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
-    print(f"  6. Deploy + Verification:    {workflow['deployment_verification']:6.1f} min ({workflow['deployment_verification']/60:.2f}h)")
+    print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
+    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Subtotal (workflow):         {workflow['total_hours']:.2f}h")
 
