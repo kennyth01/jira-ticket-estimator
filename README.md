@@ -11,6 +11,7 @@ A Claude Code skill for estimating manual and AI-assisted development time for J
 - **Automatic Task Classification**: Net-New, Enhancement, Refactor, Bug Fix, Spike
 - **Complexity-Based Scaling**: Implementation time scales with adjusted complexity scores
 - **Overhead Activities**: Automatic detection of database changes, security reviews, and custom processes
+- **Manual Time Adjustments**: Automatic detection of explicit time additions in ticket content (e.g., `+4h`, `(30m)`)
 - **T-Shirt Sizing & Story Points**: XS, S, M, L, XL mapped to Fibonacci story points
 - **Smart Bucket Rounding**: Rounds to standardized time buckets (1h, 2h, 3h, 4h, 6h, 8h, 12h, 16h, 20h, etc.)
 
@@ -118,10 +119,11 @@ Project type: mobile
 
 1. **Fetch Ticket Details** - Retrieves ticket information via Atlassian MCP (or prompts you)
 2. **Classify Task Type** - Analyzes keywords to classify as Bug Fix, Refactor, Enhancement, Net-New, or Spike
-3. **Repository Reconnaissance** - Scans codebase to understand scope (files, LOC, integration points)
-4. **Score Complexity** - Evaluates 5 factors: Scope Size, Technical Complexity, Testing Requirements, Risk & Unknowns, Dependencies
-5. **Calculate Estimates** - Uses Python calculation engine with your project configuration
-6. **Present Results** - Shows both manual and AI-assisted estimates with phase breakdowns
+3. **Detect Manual Time Adjustments** - Scans for explicit time additions like `(+4h)` or `+30m`
+4. **Repository Reconnaissance** - Scans codebase to understand scope (files, LOC, integration points)
+5. **Score Complexity** - Evaluates 5 factors: Scope Size, Technical Complexity, Testing Requirements, Risk & Unknowns, Dependencies
+6. **Calculate Estimates** - Uses Python calculation engine with your project configuration
+7. **Present Results** - Shows both manual and AI-assisted estimates with phase breakdowns, overhead activities, and manual adjustments
 
 ## Project Types
 
@@ -249,13 +251,21 @@ See `references/task-type-classification.md` for complete classification guide.
 |----------|------|--------|
 | *No overhead detected in this example* | - | - |
 
+## Manual Time Adjustments
+
+*Manual time adjustments apply to both manual and AI-assisted workflows*
+
+| Adjustment | Time | Source |
+|------------|------|--------|
+| *No manual adjustments detected in this example* | - | - |
+
 ## Time Savings
 
-- Manual Development: 8.22h → 8h rounded
-- AI-Assisted Development: 4.88h → 6h rounded
+- Manual Development: 8.22h (workflow) + 0h (overhead) + 0h (adjustments) = 8.22h → 8h rounded
+- AI-Assisted Development: 4.88h (workflow) + 0h (overhead) + 0h (adjustments) = 4.88h → 6h rounded
 - Time Savings: 3.34h (40.6% faster)
 
-*Note: If overhead activities were detected, they would be added to both workflow totals*
+*Note: Overhead activities and manual adjustments are added to both workflow totals and cannot be accelerated by AI*
 
 ## Complexity Scores
 
@@ -304,6 +314,59 @@ The skill automatically detects project-specific overhead processes:
 - Keywords: api change, breaking change, public api
 
 See `references/overhead-activities.md` for complete configuration guide.
+
+## Manual Time Adjustments
+
+Sometimes tickets include explicit time requirements that can't be captured by the standard workflow. The skill automatically detects and applies these manual time additions.
+
+### Supported Formats
+
+**Hours notation:**
+- `(+4h)`, `(4h)`, `(+4 hours)` - Parentheses format (recommended)
+- `+4h`, `+4 hours` - Plus prefix format
+- `+2.5h`, `+1.5 hours` - Decimal values supported
+
+**Minutes notation:**
+- `(+30m)`, `(30m)`, `(+30 minutes)` - Parentheses format
+- `+30m`, `+15 minutes` - Plus prefix format
+
+### Example Tickets
+
+**Example 1**: "Ensure QA automation run is not affected (+4h)"
+- Detected: +4 hours
+- Applied to both manual and AI-assisted workflows
+
+**Example 2**: "Fix login bug - manual regression testing required +2h"
+- Detected: +2 hours
+- Applied to both workflows
+
+**Example 3**: "Add validation logic (+30m) and coordinate with ops team (+1h)"
+- Detected: +30 minutes + 1 hour = 1.5 hours
+- Applied to both workflows
+
+### How It Works
+
+1. Scans ticket title and description for time patterns
+2. Extracts all time values (hours and minutes)
+3. Sums them together
+4. Adds total to both manual and AI-assisted estimates
+5. Displays clearly in output
+
+**Important**: Manual adjustments apply to BOTH workflows equally. They represent additional time that cannot be accelerated by AI (e.g., waiting for manual QA, coordinating with external teams, physical device testing).
+
+### Configuration
+
+Enable or disable in `heuristics.json`:
+
+```json
+{
+  "manual_time_adjustments": {
+    "enabled": true,
+    "patterns": [...],
+    "search_locations": ["title", "description"]
+  }
+}
+```
 
 ## Configuration
 
@@ -464,10 +527,13 @@ AI-assisted development typically provides 40-50% time savings:
 | Deploy | 100% | 100% (same time) | 0% |
 | Verification | 100% | ~50% (faster smoke tests) | ~50% faster |
 | **Overhead Activities** | **100%** | **100% (same time)** | **0%** |
+| **Manual Time Adjustments** | **100%** | **100% (same time)** | **0%** |
 
-**Important**: Overhead activities (DBA tickets, cross-team coordination, security reviews) take the same time regardless of AI usage. This reduces overall time savings percentage.
+**Important**: Overhead activities (DBA tickets, cross-team coordination, security reviews) and manual time adjustments take the same time regardless of AI usage. This reduces overall time savings percentage.
 
-**Example**: A task with 10h manual workflow and 5h AI-assisted workflow (50% savings) plus 1h overhead becomes 11h manual vs 6h AI-assisted (45% overall savings).
+**Example 1 - Overhead**: A task with 10h manual workflow and 5h AI-assisted workflow (50% savings) plus 1h overhead becomes 11h manual vs 6h AI-assisted (45% overall savings).
+
+**Example 2 - Manual Adjustment**: A ticket with "(+4h)" for manual QA testing: 6h manual workflow + 4h adjustment = 10h total; 3h AI workflow + 4h adjustment = 7h total (30% overall savings, down from 50% workflow-only savings).
 
 **Note**: AI-assisted savings assume:
 - Access to AI coding tools (Claude, Cursor, GitHub Copilot)
@@ -490,6 +556,13 @@ AI-assisted development typically provides 40-50% time savings:
 2. Verify overhead is enabled in `heuristics.json`
 3. Add custom keywords if needed
 4. Check `applies_to_task_types` constraint
+
+### Manual time adjustment not detected
+
+1. Check format: Use `(+4h)`, `+4h`, `(30m)`, or `+30m`
+2. Verify feature is enabled in `heuristics.json`
+3. Check ticket title and description for patterns
+4. Try parentheses format for clarity: `(+Xh)`
 
 ### Wrong project type selected
 
@@ -521,5 +594,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-11-02
-**Version**: 2.1 (separated deployment and verification phases)
+**Last Updated**: 2025-11-03
+**Version**: 2.2 (added manual time adjustments detection, fixed deployment phase reference)

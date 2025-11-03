@@ -98,7 +98,7 @@
             "label": "Deploy to Test",
             "description": "Deploy to test environment",
             "time_savings_percentage": 0,
-            "base_on_manual_phase": "deployment_verification",
+            "base_on_manual_phase": "deployment_to_test",
             "notes": "Same as manual - deployment time doesn't change"
           },
           "test_verification": {
@@ -642,6 +642,43 @@
         "Multiple overheads can apply to a single ticket",
         "Teams should customize keywords and times based on their processes",
         "Disable activities that don't apply to your workflow"
+      ]
+    },
+
+    "manual_time_adjustments": {
+      "description": "Detect and apply explicit time adjustments specified in ticket title or description",
+      "enabled": true,
+      "patterns": [
+        {
+          "regex": "\\(\\+?(\\d+(?:\\.\\d+)?)\\s*h(?:ours?)?\\)",
+          "description": "Matches: (+4h), (+4 hours), (4h), (4 hours)",
+          "example": "ensure qa automation run is not affected (+4h)"
+        },
+        {
+          "regex": "\\+\\s*(\\d+(?:\\.\\d+)?)\\s*h(?:ours?)?",
+          "description": "Matches: +4h, +4 hours, + 4h",
+          "example": "manual testing required +2h"
+        },
+        {
+          "regex": "\\(\\+?(\\d+(?:\\.\\d+)?)\\s*m(?:in(?:ute)?s?)?\\)",
+          "description": "Matches: (+30m), (+30 min), (30m), (30 minutes)",
+          "example": "quick check needed (30m)"
+        },
+        {
+          "regex": "\\+\\s*(\\d+(?:\\.\\d+)?)\\s*m(?:in(?:ute)?s?)?",
+          "description": "Matches: +30m, +30 min, +30 minutes",
+          "example": "add logging +15 minutes"
+        }
+      ],
+      "search_locations": ["title", "description"],
+      "aggregation": "sum",
+      "notes": [
+        "Patterns are checked in order; first match wins per occurrence",
+        "All matches are summed together for total adjustment",
+        "Manual adjustments are added on top of calculated estimates and overhead",
+        "Use parentheses format (+Xh) to clearly indicate additional time",
+        "Hours (h/hours) and minutes (m/min/minutes) are supported",
+        "Decimal values supported: +2.5h, +1.5 hours"
       ]
     },
 

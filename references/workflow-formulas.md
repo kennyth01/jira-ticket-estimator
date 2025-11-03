@@ -178,10 +178,46 @@ verificationTime = 20 × (3.5 / 5) = 20 × 0.7 = 14 minutes
 
 ## Total Time Calculation
 
+### Base Workflow Time
+
 ```
-totalTime = planningTime + implementationTime + selfReviewTime +
-            testingTime + codeReviewTime + deployTime + verificationTime
+workflowTime = planningTime + implementationTime + selfReviewTime +
+               testingTime + codeReviewTime + deployTime + verificationTime
 ```
+
+### Overhead Activities (Optional)
+
+Detected automatically based on keywords in ticket content:
+
+```
+overheadTime = sum(detected_overhead_activities)
+```
+
+Examples:
+- Database Change Management: +20 min
+- Cross-Team Coordination: +30 min
+- Security Review: +30 min
+
+### Manual Time Adjustments (Optional)
+
+Extracted from explicit time patterns in ticket title/description:
+
+```
+manualAdjustmentTime = sum(extracted_time_values)
+```
+
+Supported patterns:
+- `(+4h)`, `(4h)`, `(+4 hours)` → +4 hours
+- `(+30m)`, `(30m)`, `(+30 minutes)` → +30 minutes
+- `+2.5h` → +2.5 hours
+
+### Final Total Time
+
+```
+totalTime = workflowTime + overheadTime + manualAdjustmentTime
+```
+
+**Important**: Both overhead activities and manual adjustments apply equally to manual and AI-assisted workflows. They cannot be accelerated by AI.
 
 ## Bucket Rounding
 
@@ -302,3 +338,89 @@ Bucket Rounding:
 
 Final Estimate: 12 hours (1.5 days)
 ```
+
+## Complete Example with Overhead and Manual Adjustments
+
+**Ticket**: "Add user authentication with database migration (+2h for manual security testing)"
+
+**Inputs**:
+- Project Type: Monolithic
+- Task Type: Net-New Feature
+- Raw Complexity: 7.0/10
+- Adjusted Complexity: 7.0/10 (no task type adjustment for net-new)
+- Scale Factor: 1.4 (7.0 / 5)
+- Infrastructure Changes: No
+
+**Workflow Calculations**:
+
+```
+Planning & Design:
+  90 × 1.4 = 126 minutes
+
+Implementation:
+  7.0 × 30 = 210 minutes
+
+Self Review:
+  30 minutes (fixed)
+
+Testing:
+  210 × 0.40 = 84 minutes
+
+Code Review:
+  45 × 1.4 = 63 minutes
+
+Deployment to Test:
+  25 minutes (no infra changes)
+
+Verification:
+  20 × 1.4 = 28 minutes
+
+Workflow Total:
+  126 + 210 + 30 + 84 + 63 + 25 + 28 = 566 minutes = 9.43 hours
+```
+
+**Overhead Activities Detected**:
+
+```
+Database Change Management: +20 min (keyword: "database", "migration")
+
+Overhead Total: 20 minutes = 0.33 hours
+```
+
+**Manual Time Adjustments Detected**:
+
+```
+Pattern: "(+2h for manual security testing)"
+Extracted: +2 hours
+
+Manual Adjustment Total: 2 hours
+```
+
+**Final Calculation**:
+
+```
+Total Time = 9.43h (workflow) + 0.33h (overhead) + 2.0h (adjustments)
+Total Time = 11.76 hours
+
+Bucket Rounding:
+  11.76h → current bucket = 12h, threshold = 13.0h
+  11.76 < 13.0 → stays at 12h
+
+Final Estimate: 12 hours (1.5 days)
+```
+
+**Breakdown in Output**:
+
+```
+Manual Development Time: 12h
+  - Workflow: 9.43h
+  - Overhead: 0.33h (Database Change Management)
+  - Manual Adjustments: 2h (manual security testing)
+
+AI-Assisted Development Time: ~8h
+  - Workflow: 5.1h (estimated 46% savings on workflow)
+  - Overhead: 0.33h (same - cannot be accelerated)
+  - Manual Adjustments: 2h (same - cannot be accelerated)
+```
+
+This example demonstrates how overhead activities and manual time adjustments combine to provide a complete, realistic estimate.

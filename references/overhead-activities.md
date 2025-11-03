@@ -6,6 +6,8 @@ Additional time for project-specific processes and workflows that occur outside 
 
 Overhead activities are extra tasks that must be completed as part of the ticket but aren't captured in the standard 7-phase workflow. These are typically organizational processes, compliance requirements, or coordination activities.
 
+**Related Feature**: See also [Manual Time Adjustments](#related-manual-time-adjustments) for handling explicit time additions specified directly in tickets (e.g., `+4h`, `(30m)`).
+
 ### Key Characteristics
 
 - **Additive**: Added on top of the 7-phase workflow time
@@ -521,3 +523,86 @@ To customize, edit `heuristics.json -> overhead_activities`.
 ```
 
 This makes the skill reusable across different teams and organizations!
+
+---
+
+## Related: Manual Time Adjustments
+
+While overhead activities are **automatically detected** based on keywords, **manual time adjustments** allow you to **explicitly specify** additional time directly in the ticket content.
+
+### Key Differences
+
+| Feature | Overhead Activities | Manual Time Adjustments |
+|---------|---------------------|-------------------------|
+| Detection | Automatic via keywords | Explicit in ticket content |
+| Format | Keyword-based | Time pattern: `(+4h)`, `+30m` |
+| Configuration | Enable/disable in heuristics.json | Regex patterns in heuristics.json |
+| When to Use | Predictable process overhead | Case-specific additional time |
+| Examples | DBA tickets, security reviews | Manual QA testing, external dependencies |
+
+### When to Use Each
+
+**Use Overhead Activities when**:
+- The process is standard and repeatable
+- Time is consistent across similar tickets
+- Detection can be automated via keywords
+- Example: "Database migration" → always +20 min for DBA ticket
+
+**Use Manual Time Adjustments when**:
+- Time requirement is specific to this ticket
+- Amount varies by situation
+- Stakeholder/PM explicitly specifies time
+- Example: "Fix bug **(+4h for manual regression testing)**"
+
+### Example: Combined Usage
+
+Ticket: "Add OAuth authentication with database migration (+2h for manual security audit)"
+
+**Overhead Activities Detected**:
+- Database Change Management: +20 min (keyword: "database", "migration")
+- Security Review: +30 min (keyword: "authentication")
+- Total Overhead: +50 minutes
+
+**Manual Time Adjustments Detected**:
+- +2 hours (pattern: `(+2h for manual security audit)`)
+
+**Total Additional Time**: 50 min + 2h = 2.83 hours
+
+Both are added to the final estimate on top of the calculated workflow phases.
+
+### Configuration
+
+**Overhead Activities** (`heuristics.json`):
+```json
+{
+  "overhead_activities": {
+    "activities": {
+      "database_changes": {
+        "enabled": true,
+        "additional_minutes": 20,
+        "keywords": ["migration", "database"]
+      }
+    }
+  }
+}
+```
+
+**Manual Time Adjustments** (`heuristics.json`):
+```json
+{
+  "manual_time_adjustments": {
+    "enabled": true,
+    "patterns": [
+      {"regex": "\\(\\+?(\\d+(?:\\.\\d+)?)\\s*h(?:ours?)?\\)"}
+    ]
+  }
+}
+```
+
+### Best Practice
+
+Use both features together:
+1. **Overhead activities** for predictable, repeatable processes
+2. **Manual time adjustments** for one-off, explicit time requirements
+
+This ensures estimates capture both standard organizational overhead and ticket-specific time needs.

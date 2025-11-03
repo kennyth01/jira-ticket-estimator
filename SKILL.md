@@ -63,7 +63,24 @@ Scan codebase to understand scope:
 - Identify integration points
 - Check test coverage in affected areas
 
-### 4. Score Complexity Factors
+### 4. Detect Manual Time Adjustments
+
+Scan ticket title and description for explicit time additions:
+
+**Supported patterns:**
+- `(+4h)`, `(4h)`, `(+4 hours)` - Parentheses format (recommended)
+- `+4h`, `+4 hours` - Plus prefix format
+- `(+30m)`, `(30m)`, `(+30 minutes)` - Minutes notation
+- `+2.5h`, `+1.5 hours` - Decimal values supported
+
+**Examples:**
+- "ensure qa automation run is not affected (+4h)"
+- "manual testing required +2h"
+- "coordinate with DevOps team (30m)"
+
+These adjustments are added on top of calculated estimates and overhead activities.
+
+### 5. Score Complexity Factors
 
 Score each factor on 1-10 scale:
 
@@ -75,7 +92,7 @@ Score each factor on 1-10 scale:
 
 See `references/complexity-scoring-guide.md` for detailed scoring guide.
 
-### 5. Calculate Estimates Using Python Script
+### 6. Calculate Estimates Using Python Script
 
 Execute the estimation script with gathered inputs:
 
@@ -127,7 +144,7 @@ print(json.dumps(result, indent=2))
 
 Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected overhead activities.
 
-### 6. Parse and Format Results
+### 7. Parse and Format Results
 
 Extract from JSON output:
 - Project type and task type classification
@@ -136,10 +153,12 @@ Extract from JSON output:
 - Raw and adjusted complexity scores
 - Manual workflow phase-by-phase time breakdown
 - AI-assisted workflow phase-by-phase time breakdown
+- Detected overhead activities
+- Detected manual time adjustments
 - Time savings comparison
 - Total time (calculated and rounded)
 
-### 7. Present Estimate to User
+### 8. Present Estimate to User
 
 Format output as markdown table:
 
@@ -195,13 +214,27 @@ Format output as markdown table:
 
 *If no overheads detected: Skip this section*
 
+## Manual Time Adjustments
+
+*Manual time adjustments apply to BOTH manual and AI-assisted workflows*
+
+*If manual time adjustments detected in ticket:*
+
+| Adjustment | Time | Source |
+|------------|------|--------|
+| Manual time addition | +4h | Title: "ensure qa automation run is not affected (+4h)" |
+| Additional testing | +30m | Description: "manual regression testing +30m" |
+| **Total Adjustments** | **+X.XXh** | |
+
+*If no manual adjustments detected: Skip this section*
+
 ## Time Savings
 
-- **Manual Development**: X.XXh (workflow) + X.XXh (overhead) = X.XXh → Xh rounded
-- **AI-Assisted Development**: X.XXh (workflow) + X.XXh (overhead) = X.XXh → Xh rounded
+- **Manual Development**: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+- **AI-Assisted Development**: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
 - **Time Savings**: X.XXh (XX.X% faster)
 
-*Note: Overhead time is the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
+*Note: Overhead time and manual adjustments are the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
 
 ## Complexity Scores
 
@@ -232,7 +265,7 @@ Format output as markdown table:
 5. Track actual vs estimated time for calibration
 ```
 
-### 8. Optional: Update Jira
+### 9. Optional: Update Jira
 
 If `--update-jira` flag provided:
 
@@ -321,6 +354,14 @@ All parameters stored in `heuristics.json`:
 - Custom overheads for your team's processes
 
 See `references/overhead-activities.md` for configuration guide.
+
+### Manual Time Adjustments
+- Automatic detection of explicit time additions in ticket content
+- Supports patterns: `(+4h)`, `+2h`, `(30m)`, `+15 minutes`
+- Supports hours and minutes notation
+- Supports decimal values: `+2.5h`
+- All detected adjustments are summed and added to final estimate
+- Can be disabled by setting `"enabled": false` in heuristics.json
 
 ### Global Settings
 - Task type definitions and keywords
@@ -424,7 +465,8 @@ Example adjustment:
 - **Both workflows calculated automatically** - choose based on your development approach
 - **AI-assisted estimates assume**: Effective prompt engineering, experienced with AI tools, quality review process
 - **Overhead activities are configurable** - enable/disable based on your processes
-- **Track actual vs estimated** by phase and overhead for calibration
+- **Manual time adjustments detected automatically** - use `(+Xh)` or `+Xh` format in ticket content
+- **Track actual vs estimated** by phase, overhead, and adjustments for calibration
 - **Adjust `heuristics.json`** based on team historical data
 - **Use `--update-jira`** to persist story points automatically
 - **Open-source ready** - all team-specific configs in heuristics.json
