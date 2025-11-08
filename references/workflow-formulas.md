@@ -211,13 +211,98 @@ Supported patterns:
 - `(+30m)`, `(30m)`, `(+30 minutes)` → +30 minutes
 - `+2.5h` → +2.5 hours
 
+### File Touch Overhead (Manual Workflow Only)
+
+**Applies to**: Manual workflow only (AI can batch process files efficiently)
+
+Accounts for the mechanical overhead of opening, reading, understanding, and modifying multiple files. This is **real overhead often forgotten** in estimates.
+
+**Formula**:
+```
+if (file_count >= minimum_files_for_overhead) {
+  complexityMultiplier = getComplexityMultiplier(adjustedComplexity)
+  fileOverheadMinutes = file_count × base_time_per_file × complexityMultiplier
+  fileOverheadMinutes = min(fileOverheadMinutes, maximum_overhead_minutes)
+} else {
+  fileOverheadMinutes = 0
+}
+```
+
+**Configuration** (from heuristics.json):
+- `base_time_per_file_minutes`: 2.5 minutes
+- `minimum_files_for_overhead`: 20 files (no overhead below this)
+- `maximum_overhead_minutes`: 300 minutes (5 hours cap)
+
+**Complexity Multipliers**:
+```
+if (adjustedComplexity < 3.0) {
+  multiplier = 0.6  // Low complexity (simple find/replace)
+} else if (adjustedComplexity < 6.0) {
+  multiplier = 1.0  // Medium complexity (moderate changes)
+} else {
+  multiplier = 1.5  // High complexity (architectural changes)
+}
+```
+
+**Examples**:
+
+**Example 1**: 75 files, complexity 4.0 (medium)
+```
+75 files >= 20 threshold ✓
+complexityMultiplier = 1.0 (medium)
+fileOverheadMinutes = 75 × 2.5 × 1.0 = 187.5 minutes (3.1 hours)
+187.5 < 300 cap ✓
+Final overhead: 187.5 minutes
+```
+
+**Example 2**: 120 files, complexity 7.5 (high)
+```
+120 files >= 20 threshold ✓
+complexityMultiplier = 1.5 (high)
+fileOverheadMinutes = 120 × 2.5 × 1.5 = 450 minutes
+450 > 300 cap → capped at 300 minutes (5 hours)
+Final overhead: 300 minutes
+```
+
+**Example 3**: 15 files, complexity 2.0 (low)
+```
+15 files < 20 threshold ✗
+Final overhead: 0 minutes (below threshold)
+```
+
+**Example 4**: 50 files, complexity 2.5 (low)
+```
+50 files >= 20 threshold ✓
+complexityMultiplier = 0.6 (low)
+fileOverheadMinutes = 50 × 2.5 × 0.6 = 75 minutes (1.25 hours)
+75 < 300 cap ✓
+Final overhead: 75 minutes
+```
+
+**Important Notes**:
+- File touch overhead is **added to the implementation phase** of manual workflow only
+- AI-assisted workflow does NOT include this overhead (AI can batch process efficiently)
+- Always count **unique files** (deduplicate across multiple searches)
+- Include: source files, test files, config files, migration files
+- This overhead captures: opening file, reading context, understanding dependencies, making change, saving
+
+**Impact on Estimates**:
+- 20-50 files: Adds ~0.8-2h to manual estimate
+- 50-100 files: Adds ~2-4h to manual estimate
+- 100+ files: Adds ~4-5h to manual estimate (capped)
+
+**Common mistake**: Forgetting to count files results in **2-5 hour underestimate** for large refactors!
+
 ### Final Total Time
 
 ```
-totalTime = workflowTime + overheadTime + manualAdjustmentTime
+totalTime = workflowTime + fileOverheadTime + overheadTime + manualAdjustmentTime
 ```
 
-**Important**: Both overhead activities and manual adjustments apply equally to manual and AI-assisted workflows. They cannot be accelerated by AI.
+**Important**:
+- File touch overhead applies **only to manual workflow**
+- Overhead activities and manual adjustments apply equally to both manual and AI-assisted workflows
+- File overhead, overhead activities, and manual adjustments **cannot be accelerated by AI**
 
 ## Bucket Rounding
 

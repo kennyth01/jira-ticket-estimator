@@ -10,6 +10,7 @@ A Claude Code skill for estimating manual and AI-assisted development time for J
 - **5 Project Types**: Monolithic, Serverless, Frontend, Full-Stack, Mobile (iOS/Android/React Native/Flutter)
 - **Automatic Task Classification**: Net-New, Enhancement, Refactor, Bug Fix, Spike
 - **Complexity-Based Scaling**: Implementation time scales with adjusted complexity scores
+- **File Touch Overhead**: Realistic time estimates for multi-file refactors (manual development only)
 - **Overhead Activities**: Automatic detection of database changes, security reviews, and custom processes
 - **Manual Time Adjustments**: Automatic detection of explicit time additions in ticket content (e.g., `+4h`, `(30m)`)
 - **T-Shirt Sizing & Story Points**: XS, S, M, L, XL mapped to Fibonacci story points
@@ -122,8 +123,9 @@ Project type: mobile
 3. **Detect Manual Time Adjustments** - Scans for explicit time additions like `(+4h)` or `+30m`
 4. **Repository Reconnaissance** - Scans codebase to understand scope (files, LOC, integration points)
 5. **Score Complexity** - Evaluates 5 factors: Scope Size, Technical Complexity, Testing Requirements, Risk & Unknowns, Dependencies
-6. **Calculate Estimates** - Uses Python calculation engine with your project configuration
-7. **Present Results** - Shows both manual and AI-assisted estimates with phase breakdowns, overhead activities, and manual adjustments
+6. **Calculate File Touch Overhead** - Adds realistic time for touching many files (manual development only)
+7. **Calculate Estimates** - Uses Python calculation engine with your project configuration
+8. **Present Results** - Shows both manual and AI-assisted estimates with phase breakdowns, overhead activities, and file touch overhead
 
 ## Project Types
 
@@ -368,6 +370,101 @@ Enable or disable in `heuristics.json`:
 }
 ```
 
+## File Touch Overhead
+
+For large-scale refactors touching many files, humans need additional time for navigation, context switching, and understanding each file. AI can batch process files efficiently. This feature adds realistic overhead **only to manual development estimates**.
+
+### How It Works
+
+```
+Overhead Time = File Count × Base Time per File × Complexity Multiplier
+```
+
+**Default Parameters:**
+- Base time per file: **2.5 minutes** (open, read, understand, modify)
+- Minimum threshold: **20 files** (no overhead below this)
+- Maximum cap: **300 minutes** (5 hours)
+
+**Complexity Scaling:**
+| Complexity | Range | Multiplier | Meaning |
+|-----------|-------|------------|---------|
+| Low | < 3.0/10 | 0.6× | Simple find/replace |
+| Medium | 3.0-6.0/10 | 1.0× | Moderate changes |
+| High | > 6.0/10 | 1.5× | Complex architectural changes |
+
+### Example Usage
+
+```
+Estimate SATHREE-40524 with 60 files to be modified
+Project type: monolithic
+Task type: refactor
+```
+
+**Result for 60 files at complexity 7.65/10:**
+- Overhead: 60 × 2.5 min × 1.5 (high) = **225 min (3.75h)**
+- Manual estimate: 6h → **12h** (+3.75h overhead)
+- AI-assisted: 4h → **6h** (NO overhead - AI batches files)
+
+### Real-World Example
+
+**SATHREE-40524 - Messages Cleanup:**
+- Files affected: 60+ (32 sync files + 28 extendables)
+- Complexity: 7.65/10 (high)
+- Without overhead: 6h manual (unrealistic)
+- With overhead: 12h manual (realistic)
+- AI-assisted: 6h (no overhead needed)
+
+### Why Manual Only?
+
+**Manual Development:**
+- Must open each file individually (~30 sec)
+- Read and understand context (~1 min)
+- Make changes carefully (~1 min)
+- Context switch between files (~30 sec)
+- **Total: ~2.5-3 min per file**
+
+**AI-Assisted Development:**
+- Grep entire codebase (10 sec)
+- Batch process all changes (2-3 min)
+- No context switching overhead
+- **Can handle 60 files as easily as 6**
+
+### Configuration
+
+Edit `heuristics.json` to customize:
+
+```json
+{
+  "file_touch_overhead": {
+    "enabled": true,
+    "applies_to_workflow": "manual_only",
+    "base_time_per_file_minutes": 2.5,
+    "minimum_files_for_overhead": 20,
+    "maximum_overhead_minutes": 300,
+    "complexity_scaling": {
+      "enabled": true,
+      "low_complexity_multiplier": 0.6,
+      "medium_complexity_multiplier": 1.0,
+      "high_complexity_multiplier": 1.5,
+      "thresholds": {
+        "low": 3.0,
+        "medium": 6.0,
+        "high": 10.0
+      }
+    }
+  }
+}
+```
+
+**Customization options:**
+1. Adjust `base_time_per_file_minutes` for your codebase complexity
+2. Lower `minimum_files_for_overhead` to apply to smaller tasks
+3. Increase `maximum_overhead_minutes` for very large refactors
+4. Disable complexity scaling for flat multiplier
+5. Set `enabled: false` to turn off entirely
+
+See `FILE_TOUCH_OVERHEAD.md` for complete documentation.
+
 ## Configuration
 
 All estimation parameters are stored in `heuristics.json`:
@@ -470,6 +567,7 @@ After 10-20 tickets, update `heuristics.json`:
 jira-ticket-estimator/
 ├── README.md                           # This file
 ├── SKILL.md                            # Skill definition for Claude Code
+├── FILE_TOUCH_OVERHEAD.md              # File touch overhead feature guide
 ├── heuristics.json                     # All estimation configuration
 ├── scripts/
 │   └── estimator.py                    # Python calculation engine
@@ -513,6 +611,23 @@ Estimate PROJ-123 with infrastructure changes
 Project type: fullstack
 ```
 
+### File Count for Multi-File Refactors
+
+For large-scale refactors touching many files:
+
+```
+Estimate PROJ-123 with 60 files to be modified
+Project type: monolithic
+```
+
+This adds realistic file touch overhead to manual estimates only. The overhead includes time for:
+- Opening and navigating to each file
+- Reading and understanding context
+- Making changes carefully
+- Context switching between different areas
+
+AI-assisted estimates do NOT include this overhead since AI can batch process files efficiently.
+
 ## Time Savings Breakdown
 
 AI-assisted development typically provides 40-50% time savings:
@@ -528,12 +643,15 @@ AI-assisted development typically provides 40-50% time savings:
 | Verification | 100% | ~50% (faster smoke tests) | ~50% faster |
 | **Overhead Activities** | **100%** | **100% (same time)** | **0%** |
 | **Manual Time Adjustments** | **100%** | **100% (same time)** | **0%** |
+| **File Touch Overhead** | **100%** | **0% (not needed)** | **100% saved** |
 
-**Important**: Overhead activities (DBA tickets, cross-team coordination, security reviews) and manual time adjustments take the same time regardless of AI usage. This reduces overall time savings percentage.
+**Important**: Overhead activities (DBA tickets, cross-team coordination, security reviews) and manual time adjustments take the same time regardless of AI usage. However, **file touch overhead** provides massive savings - AI can handle 60 files as easily as 6 files.
 
 **Example 1 - Overhead**: A task with 10h manual workflow and 5h AI-assisted workflow (50% savings) plus 1h overhead becomes 11h manual vs 6h AI-assisted (45% overall savings).
 
 **Example 2 - Manual Adjustment**: A ticket with "(+4h)" for manual QA testing: 6h manual workflow + 4h adjustment = 10h total; 3h AI workflow + 4h adjustment = 7h total (30% overall savings, down from 50% workflow-only savings).
+
+**Example 3 - File Touch Overhead**: A refactor touching 60 files: 6h manual base + 3.75h file overhead = 9.75h manual; 3h AI base + 0h file overhead = 3h AI (69% savings! File overhead amplifies AI advantage).
 
 **Note**: AI-assisted savings assume:
 - Access to AI coding tools (Claude, Cursor, GitHub Copilot)
@@ -563,6 +681,22 @@ AI-assisted development typically provides 40-50% time savings:
 2. Verify feature is enabled in `heuristics.json`
 3. Check ticket title and description for patterns
 4. Try parentheses format for clarity: `(+Xh)`
+
+### File touch overhead not applied
+
+1. Check if `file_count` parameter was provided
+2. Verify file count is ≥ 20 (minimum threshold)
+3. Check if feature is enabled in `heuristics.json`
+4. Ensure you're looking at manual estimate (not AI-assisted)
+5. Verify overhead is shown in implementation phase breakdown
+
+### File touch overhead seems too high/low
+
+1. Adjust `base_time_per_file_minutes` in `heuristics.json`
+2. Review complexity multiplier thresholds
+3. Check if cap was applied (300 min default)
+4. Compare to actual time from similar multi-file refactors
+5. Consider disabling complexity scaling for flat multiplier
 
 ### Wrong project type selected
 
@@ -594,5 +728,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-11-03
-**Version**: 2.2 (added manual time adjustments detection, fixed deployment phase reference)
+**Last Updated**: 2025-11-07
+**Version**: 2.3 (added file touch overhead for multi-file refactors)

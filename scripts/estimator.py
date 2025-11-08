@@ -460,6 +460,83 @@ class TicketEstimator:
         # Stay at current bucket
         return current_bucket, threshold_config['threshold'] if threshold_config else hours
 
+    def calculate_file_touch_overhead(self, file_count: int, raw_complexity: float) -> Dict:
+        """
+        Calculate overhead time for touching many files in manual development.
+
+        Args:
+            file_count: Number of files to be modified
+            raw_complexity: Raw complexity score (0-10)
+
+        Returns:
+            Dict with overhead details
+        """
+        config = self.config.get('file_touch_overhead', {})
+
+        if not config.get('enabled', False):
+            return {
+                'enabled': False,
+                'overhead_minutes': 0,
+                'overhead_hours': 0,
+                'file_count': file_count,
+                'details': 'File touch overhead is disabled'
+            }
+
+        if file_count is None or file_count < config.get('minimum_files_for_overhead', 20):
+            return {
+                'enabled': True,
+                'overhead_minutes': 0,
+                'overhead_hours': 0,
+                'file_count': file_count or 0,
+                'details': f'Below minimum threshold ({config.get("minimum_files_for_overhead", 20)} files)'
+            }
+
+        # Get base time per file
+        base_time = config.get('base_time_per_file_minutes', 2.5)
+
+        # Calculate complexity multiplier
+        scaling_config = config.get('complexity_scaling', {})
+        if scaling_config.get('enabled', True):
+            thresholds = scaling_config.get('thresholds', {})
+            if raw_complexity < thresholds.get('low', 3.0):
+                multiplier = scaling_config.get('low_complexity_multiplier', 0.6)
+                complexity_level = 'low'
+            elif raw_complexity < thresholds.get('medium', 6.0):
+                multiplier = scaling_config.get('medium_complexity_multiplier', 1.0)
+                complexity_level = 'medium'
+            else:
+                multiplier = scaling_config.get('high_complexity_multiplier', 1.5)
+                complexity_level = 'high'
+        else:
+            multiplier = 1.0
+            complexity_level = 'none'
+
+        # Calculate overhead
+        overhead_minutes = file_count * base_time * multiplier
+
+        # Apply maximum cap
+        max_overhead = config.get('maximum_overhead_minutes', 300)
+        if overhead_minutes > max_overhead:
+            overhead_minutes = max_overhead
+            capped = True
+        else:
+            capped = False
+
+        return {
+            'enabled': True,
+            'overhead_minutes': round(overhead_minutes, 1),
+            'overhead_hours': round(overhead_minutes / 60.0, 2),
+            'file_count': file_count,
+            'base_time_per_file': base_time,
+            'complexity_multiplier': multiplier,
+            'complexity_level': complexity_level,
+            'raw_complexity': raw_complexity,
+            'calculation': f'{file_count} files × {base_time} min × {multiplier} = {round(overhead_minutes, 1)} min',
+            'capped': capped,
+            'maximum_overhead': max_overhead if capped else None,
+            'details': f'{file_count} files with {complexity_level} complexity ({raw_complexity:.1f}/10)'
+        }
+
     def estimate_ticket(self,
                        title: str,
                        description: str,
@@ -468,23 +545,36 @@ class TicketEstimator:
                        complexity_scores: Dict[str, int] = None,
                        task_type_override: str = None,
                        team_velocity: float = None,
-                       has_infrastructure_changes: bool = None) -> Dict:
+                       has_infrastructure_changes: bool = None,
+                       file_count: int = None) -> Dict:
         """
         Complete estimation for a ticket.
 
         Args:
             title: Ticket title
             description: Ticket description
-            project_type: Project architecture type (monolithic, serverless, frontend, fullstack)
-            issue_type: Jira issue type (Bug, Story, etc.)
+            project_type: Project architecture type (monolithic, serverless, frontend, fullstack, mobile)
+            issue_type: Jira issue type (Bug, Story, Task, Spike, etc.)
             complexity_scores: Dict with keys: scope_size, technical_complexity,
                              testing_requirements, risk_and_unknowns, dependencies
             task_type_override: Manual task type override
             team_velocity: Team velocity factor
             has_infrastructure_changes: Flag for infrastructure changes
+            file_count: Number of unique files to be modified (CRITICAL for file_touch_overhead).
+                       Count files from Grep/Glob searches during reconnaissance.
+                       Adds 2.5 min/file overhead to manual workflow (20 file minimum).
+                       Forgetting this parameter can underestimate by 2-5 hours for large refactors!
 
         Returns:
-            Complete estimation breakdown
+            Complete estimation breakdown including:
+            - Task classification and complexity scores
+            - T-shirt size and story points
+            - Manual workflow time breakdown (7 phases)
+            - AI-assisted workflow time breakdown (7 phases)
+            - File touch overhead (manual only)
+            - Detected overhead activities
+            - Manual time adjustments
+            - Time savings analysis
         """
         # Use defaults if not provided
         defaults = self.config.get('defaults', {})
@@ -522,6 +612,26 @@ class TicketEstimator:
             complexity_scores['dependencies']
         )
 
+        # Validate file_count for large scope
+        if complexity_scores['scope_size'] >= 7 and (file_count is None or file_count == 0):
+            import warnings
+            warnings.warn(
+                f"\n{'=' * 70}\n"
+                f"WARNING: High scope_size ({complexity_scores['scope_size']}/10) detected but file_count=0!\n"
+                f"\n"
+                f"File touch overhead may be significantly underestimated.\n"
+                f"Consider running repository reconnaissance to count affected files:\n"
+                f"  - Use Grep/Glob to find all files to be modified\n"
+                f"  - Count unique files across all searches\n"
+                f"  - Pass file_count parameter to estimate_ticket()\n"
+                f"\n"
+                f"Impact: For large refactors (50-100+ files), this can add 2-5 hours\n"
+                f"to the manual workflow estimate.\n"
+                f"{'=' * 70}\n",
+                UserWarning,
+                stacklevel=2
+            )
+
         # Get sizing
         t_shirt_size = self.get_t_shirt_size(adjusted_complexity)
         story_points = self.get_story_points(adjusted_complexity, team_velocity)
@@ -530,6 +640,17 @@ class TicketEstimator:
         manual_workflow = self.calculate_manual_workflow_time(
             project_type, task_type, adjusted_complexity, scale_factor, has_infrastructure_changes
         )
+
+        # Calculate file touch overhead (manual development only)
+        file_touch_overhead = self.calculate_file_touch_overhead(file_count, raw_complexity)
+
+        # Add file touch overhead to manual workflow implementation time
+        if file_touch_overhead['overhead_minutes'] > 0:
+            manual_workflow['implementation'] += file_touch_overhead['overhead_minutes']
+            manual_workflow['total_minutes'] += file_touch_overhead['overhead_minutes']
+            manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
+            manual_workflow['phases']['2_implementation']['time_minutes'] += file_touch_overhead['overhead_minutes']
+            manual_workflow['phases']['2_implementation']['file_touch_overhead'] = file_touch_overhead
 
         # Detect overhead activities
         overhead_activities = self.detect_overhead_activities(title, description, task_type, files_involved=None)
@@ -569,6 +690,7 @@ class TicketEstimator:
             'project_type_label': self.config['project_types'][project_type]['label'],
             'task_type': task_type,
             'task_type_label': self.config['task_types'][task_type]['label'],
+            'file_touch_overhead': file_touch_overhead,
             'task_type_reasons': task_type_reasons,
             't_shirt_size': t_shirt_size,
             'story_points': story_points,

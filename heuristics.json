@@ -39,7 +39,7 @@
           "code_review": {
             "label": "Code Review & Revisions",
             "description": "Peer review, addressing feedback, revisions",
-            "base_minutes_at_complexity_5": 45,
+            "base_minutes_at_complexity_5": 50,
             "min_minutes": 30,
             "max_minutes": 120,
             "scales_with_complexity": true
@@ -679,6 +679,58 @@
         "Use parentheses format (+Xh) to clearly indicate additional time",
         "Hours (h/hours) and minutes (m/min/minutes) are supported",
         "Decimal values supported: +2.5h, +1.5 hours"
+      ]
+    },
+
+    "file_touch_overhead": {
+      "description": "Additional time for touching many files in manual development (navigation, context switching, mechanical overhead)",
+      "enabled": true,
+      "applies_to_workflow": "manual_only",
+      "base_time_per_file_minutes": 5,
+      "complexity_scaling": {
+        "enabled": true,
+        "description": "More complex changes require more time per file",
+        "low_complexity_multiplier": 1,
+        "medium_complexity_multiplier": 1.5,
+        "high_complexity_multiplier": 1.8,
+        "thresholds": {
+          "low": 6.0,
+          "medium": 11.0,
+          "high": 16.0
+        }
+      },
+      "minimum_files_for_overhead": 20,
+      "maximum_overhead_minutes": 300,
+      "notes": [
+        "Only applies to manual workflow - AI can batch process files efficiently",
+        "Base time per file represents: opening file, reading context, understanding dependencies, making change",
+        "Complexity scaling: Low complexity (simple find/replace) vs High complexity (architectural changes)",
+        "Set minimum_files_for_overhead to avoid applying to small tasks",
+        "Maximum overhead prevents runaway estimates for very large refactors",
+        "This overhead is added to implementation phase in manual workflow only"
+      ],
+      "examples": [
+        {
+          "files": 60,
+          "complexity": 7.5,
+          "multiplier": 1.5,
+          "calculation": "60 files × 2.5 min × 1.5 = 225 minutes",
+          "rationale": "Large refactor affecting 60 files with high complexity"
+        },
+        {
+          "files": 30,
+          "complexity": 4.0,
+          "multiplier": 1.0,
+          "calculation": "30 files × 2.5 min × 1.0 = 75 minutes",
+          "rationale": "Medium refactor with moderate complexity"
+        },
+        {
+          "files": 15,
+          "complexity": 2.0,
+          "multiplier": 0.6,
+          "calculation": "0 minutes (below minimum threshold of 20 files)",
+          "rationale": "Small task, no overhead applied"
+        }
       ]
     },
 

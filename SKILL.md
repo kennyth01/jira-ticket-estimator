@@ -56,12 +56,40 @@ See `references/task-type-classification.md` for complete classification guide.
 
 ### 3. Repository Reconnaissance
 
-Scan codebase to understand scope:
+Scan codebase to understand scope and **COUNT FILES**:
 - Use Grep/Glob to find related files
-- Count files likely to be modified
+- **CRITICAL: Count unique files across all searches for file_touch_overhead**
+- **Track file count to pass to estimator - affects manual workflow time significantly**
 - Estimate LOC changes
 - Identify integration points
 - Check test coverage in affected areas
+
+**File Counting Strategy:**
+```python
+# Run multiple searches
+messaging_files = Grep("messagingSync", output_mode="files_with_matches")
+model_files = Grep("extendables", type="php", output_mode="files_with_matches")
+test_files = Glob("tests/**/*Relevant*.php")
+command_files = Glob("app/Console/Commands/**/*Relevant*.php")
+
+# Combine and deduplicate
+all_files = set()
+all_files.update(messaging_files or [])
+all_files.update(model_files or [])
+all_files.update(test_files or [])
+all_files.update(command_files or [])
+
+file_count = len(all_files)
+# This file_count MUST be passed to estimator.estimate_ticket()
+```
+
+**File Count Impact (file_touch_overhead):**
+- **< 20 files**: No overhead
+- **20-50 files**: ~50-125 min overhead (0.8-2h)
+- **50-100 files**: ~125-250 min overhead (2-4h)
+- **100+ files**: ~250-300 min overhead (4-5h, capped)
+
+**Why this matters**: Manual development has mechanical overhead (opening files, reading context, making changes). AI can batch process efficiently, so overhead only applies to manual workflow.
 
 ### 4. Detect Manual Time Adjustments
 
@@ -136,7 +164,8 @@ result = estimator.estimate_ticket(
         'risk_and_unknowns': <score>,
         'dependencies': <score>
     },
-    has_infrastructure_changes=<bool>
+    has_infrastructure_changes=<bool>,
+    file_count=<counted_files>  # IMPORTANT: Pass file count from reconnaissance
 )
 
 print(json.dumps(result, indent=2))
@@ -459,6 +488,27 @@ Example adjustment:
 
 7. Track in backlog for calibration
 
+## Estimation Checklist
+
+Before calling `estimator.estimate_ticket()`, ensure you have:
+
+- [ ] Fetched ticket details (title, description, issue type)
+- [ ] Classified task type (bug_fix, refactor, enhancement, net_new, spike)
+- [ ] Scored all 5 complexity factors (1-10 scale)
+- [ ] **Counted unique files to be modified** (CRITICAL for file_touch_overhead)
+- [ ] Detected infrastructure changes (boolean)
+- [ ] Reviewed ticket for manual time adjustments
+
+**File Count Sources:**
+- Files from Grep searches (deduplicated)
+- Files from Glob patterns (deduplicated)
+- Test files to be modified
+- New files to be created
+- Artisan commands/scripts affected
+- **Always remove duplicates across searches**
+
+**Common mistake**: Forgetting to pass `file_count` parameter results in underestimating manual workflow by 2-5 hours for large refactors!
+
 ## Notes
 
 - **Estimates are predictive** - refine after reconnaissance
@@ -466,6 +516,7 @@ Example adjustment:
 - **AI-assisted estimates assume**: Effective prompt engineering, experienced with AI tools, quality review process
 - **Overhead activities are configurable** - enable/disable based on your processes
 - **Manual time adjustments detected automatically** - use `(+Xh)` or `+Xh` format in ticket content
+- **File touch overhead is CRITICAL** - always count files during reconnaissance, adds 2.5 min/file to manual workflow
 - **Track actual vs estimated** by phase, overhead, and adjustments for calibration
 - **Adjust `heuristics.json`** based on team historical data
 - **Use `--update-jira`** to persist story points automatically
