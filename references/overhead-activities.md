@@ -210,6 +210,50 @@ The presence of overhead activities **reduces the overall time savings percentag
 
 ---
 
+### 6. Regression Assurance & Validation ✅ Enabled by Default
+
+**Time**: +45 minutes
+**Applies To**: Net-New, Enhancement, Refactor, Bug Fix
+**Project Types**: Test Automation
+
+**Process**:
+1. Execute comprehensive regression tests across affected flows
+2. Validate OTP/auth paths and security flows
+3. Collect screenshots and evidence
+4. Stabilize flaky tests and retries
+5. Validate cross-flow impacts (member web, admin console, email)
+
+**Detection Keywords**:
+- Testing frameworks: regression, test automation, serenity, automation test, e2e test, integration test, test suite, test coverage, test framework
+- Tools: playwright, cypress, selenium, test scenarios
+- Validation: flows, user journey, validation, evidence collection
+
+**File Patterns**:
+- `*test*` - Test files
+- `*spec*` - Test specification files
+- `*e2e*` - End-to-end test files
+
+**Example Tickets**:
+- "Update Serenity BDD tests for password reset flow - ensure regression across OTP and security questions"
+- "Refactor test automation framework - validate existing test scenarios still pass"
+- "Add new e2e test for checkout flow - regression test all payment flows"
+- "Fix flaky Playwright test - validate impact on related test suites"
+
+**Configuration**:
+```json
+{
+  "regression_assurance": {
+    "enabled": true,
+    "additional_minutes": 45,
+    "applies_to_project_types": ["test_automation"]
+  }
+}
+```
+
+**Note**: This overhead is **specific to test automation projects** where changes to test suites require extensive regression validation across multiple user journeys and platforms.
+
+---
+
 ## Creating Custom Overhead Activities
 
 Add new overhead activities to `heuristics.json`:

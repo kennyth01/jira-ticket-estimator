@@ -7,7 +7,7 @@ A Claude Code skill for estimating manual and AI-assisted development time for J
 - **Dual Workflow Estimation**: Get both manual and AI-assisted development time estimates
 - **7-Phase Manual Workflow**: Planning & Design → Implementation → Self Review → Testing → Code Review & Revisions → Deployment to Test → Verification
 - **7-Phase AI-Assisted Workflow**: AI Planning → AI Implementation → AI Review → Human Review & Testing → Iterations & Vibe Coding → Deploy to Test → Test Verification
-- **5 Project Types**: Monolithic, Serverless, Frontend, Full-Stack, Mobile (iOS/Android/React Native/Flutter)
+- **6 Project Types**: Monolithic, Serverless, Frontend, Full-Stack, Mobile (iOS/Android/React Native/Flutter), Test Automation (Serenity BDD/Playwright/Cypress)
 - **Automatic Task Classification**: Net-New, Enhancement, Refactor, Bug Fix, Spike
 - **Complexity-Based Scaling**: Implementation time scales with adjusted complexity scores
 - **File Touch Overhead**: Realistic time estimates for multi-file refactors (manual development only)
@@ -164,6 +164,19 @@ Project type: mobile
 - Deployment to Test: 25 min (40 min with infrastructure changes) - TestFlight/Internal Testing
 - Verification: 20 min @ complexity 5 (scales with complexity)
 
+### Test Automation (Serenity BDD, Playwright, Cypress)
+- Best for: Test automation development, QA automation, E2E test suites
+- **Custom 7-Phase Workflow**: Analysis & Test Planning → Environment & Framework Setup → Page Objects & Locators → Step Implementations & Business Logic → Step Definitions & Gherkin Integration → Testing & Evidence Collection → Integration & Documentation
+- Phase 1 - Analysis & Test Planning: 145 min @ complexity 5 (test scenario design, flow coverage planning)
+- Phase 2 - Environment Setup: 63 min @ complexity 5 (test environment config, framework dependencies)
+- Phase 3 - Page Objects & Locators: 199 min @ complexity 5 (locator identification, element mappings)
+- Phase 4 - Step Implementations: Task-type based (test steps, validation logic, assertions)
+- Phase 5 - Gherkin Integration: 136 min @ complexity 5 (wire steps to implementations)
+- Phase 6 - Testing & Evidence: 72 min @ complexity 5 (test execution, screenshot capture)
+- Phase 7 - Documentation: 54 min @ complexity 5 (CI/CD integration, reporting)
+- **AI-Assisted**: 45% time savings (AI generates page objects, steps, Gherkin wiring)
+- **Common Overhead**: Regression Assurance (+45 min) for validation across multiple flows
+
 ## Complexity Factors
 
 Each ticket is scored on 5 factors (1-10 scale):
@@ -303,6 +316,11 @@ The skill automatically detects project-specific overhead processes:
 **Cross-Team Coordination** (+30 min)
 - Detected by keywords: devops, ops team, infrastructure team, collab with, coordinate with, deployment process
 - Process: Create coordination tickets, discuss with other teams, explain changes
+
+**Regression Assurance & Validation** (+45 min) - For Test Automation Projects
+- Detected by keywords: regression, test automation, serenity, automation test, e2e test, test suite, playwright, cypress, flows, validation
+- Process: Execute regression tests across affected flows, validate OTP/auth paths, collect evidence, stabilize flaky tests
+- Applies to: test_automation project type only
 
 ### Disabled by Default (enable in heuristics.json)
 
@@ -728,5 +746,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-11-07
-**Version**: 2.3 (added file touch overhead for multi-file refactors)
+**Last Updated**: 2025-11-12
+**Version**: 2.4 (added test_automation project type for Serenity BDD/Playwright/Cypress + regression_assurance overhead)

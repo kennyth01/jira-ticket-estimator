@@ -31,6 +31,7 @@ planningTime = projectType.planning_design.base_minutes_at_complexity_5 × scale
 | Serverless | 120 min | 24-240 min | Event design, IAM, IaC templates |
 | Frontend | 75 min | 15-150 min | Component architecture, state management |
 | Full-Stack | 120 min | 24-240 min | Backend + frontend architecture |
+| Test Automation | 145 min | 29-290 min | Test scenario design, flow coverage planning |
 
 **Example**: Monolithic with complexity 3.5
 ```
@@ -147,6 +148,7 @@ if (hasInfrastructureChanges) {
 | Frontend | 25 min | 35 min | Build and deploy |
 | Full-Stack | 25 min | 60 min | Backend + frontend deployment |
 | Mobile | 25 min | 40 min | TestFlight/Internal Testing build |
+| Test Automation | N/A | N/A | Uses custom phases (see below) |
 
 **Example**: Full-stack with infrastructure changes
 ```
@@ -509,3 +511,77 @@ AI-Assisted Development Time: ~8h
 ```
 
 This example demonstrates how overhead activities and manual time adjustments combine to provide a complete, realistic estimate.
+
+---
+
+## Test Automation Project Type
+
+Test automation projects (Serenity BDD, Playwright, Cypress) have a specialized 7-phase workflow that differs from traditional development:
+
+### Phase 1: Analysis & Test Planning
+```
+testPlanningTime = 145 × scaleFactor
+```
+**Range**: 29-290 minutes (complexity 1-10)
+**Description**: Spec analysis, test scenario design, flow coverage planning
+
+### Phase 2: Environment & Framework Setup
+```
+environmentSetupTime = 63 × scaleFactor
+```
+**Range**: 13-126 minutes (complexity 1-10)
+**Description**: Test environment configuration, framework dependencies, test data setup
+
+### Phase 3: Page Objects & Locators
+```
+pageObjectsTime = 199 × scaleFactor
+```
+**Range**: 40-398 minutes (complexity 1-10)
+**Description**: Create page objects, identify and implement locators, element mappings
+
+### Phase 4: Step Implementations & Business Logic
+```
+implementationTime = adjustedComplexity × baseUnits[taskType]
+```
+**Description**: Implement test steps, business logic, validation logic, assertion handlers
+
+### Phase 5: Step Definitions & Gherkin Integration
+```
+gherkinIntegrationTime = 136 × scaleFactor
+```
+**Range**: 27-272 minutes (complexity 1-10)
+**Description**: Wire Gherkin steps to implementations, feature file creation/updates
+
+### Phase 6: Testing & Evidence Collection
+```
+testingTime = 72 × scaleFactor
+```
+**Range**: 14-144 minutes (complexity 1-10)
+**Description**: Test execution, screenshot/evidence capture, result validation
+
+### Phase 7: Integration & Documentation
+```
+documentationTime = 54 × scaleFactor
+```
+**Range**: 11-108 minutes (complexity 1-10)
+**Description**: CI/CD integration, test documentation, reporting setup
+
+### Typical Breakdown
+
+For a complexity 7.3 test automation ticket:
+
+**Manual Workflow** (22 hours base):
+- Analysis & Test Planning: 3.5h (16%)
+- Environment Setup: 1.5h (7%)
+- Page Objects & Locators: 4.8h (22%)
+- Step Implementations: 5.7h (26%)
+- Gherkin Integration: 3.3h (15%)
+- Testing & Evidence: 1.8h (8%)
+- Documentation: 1.3h (6%)
+
+**AI-Assisted Workflow** (12 hours):
+- 45% time savings across all phases
+- AI generates page objects, step implementations, Gherkin wiring
+- Human validates test execution and evidence collection
+
+**Common Overhead**: Regression Assurance (+45 min) for comprehensive validation across affected flows

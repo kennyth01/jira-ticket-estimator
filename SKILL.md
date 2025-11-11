@@ -1,6 +1,6 @@
 ---
 name: Jira Ticket Estimator
-description: This skill should be used when estimating development time for Jira tickets. It provides both manual and AI-assisted estimates with T-shirt sizes, story points, and phase-by-phase time breakdowns based on task type classification, complexity scoring, and project architecture (monolithic/serverless/frontend/fullstack/mobile).
+description: This skill should be used when estimating development time for Jira tickets. It provides both manual and AI-assisted estimates with T-shirt sizes, story points, and phase-by-phase time breakdowns based on task type classification, complexity scoring, and project architecture (monolithic/serverless/frontend/fullstack/mobile/test_automation).
 ---
 
 # Jira Ticket Estimator
@@ -24,7 +24,7 @@ Invoke when:
 - User story with acceptance criteria
 
 **Optional Flags**:
-- `--project-type`: monolithic|serverless|frontend|fullstack|mobile (default: monolithic)
+- `--project-type`: monolithic|serverless|frontend|fullstack|mobile|test_automation (default: monolithic)
 - `--task-type`: Manual override for task classification
 - `--team-velocity`: Velocity factor for story points (default: 1.0)
 - `--has-infrastructure-changes`: Flag for infrastructure changes
@@ -336,6 +336,18 @@ Five project types with customized workflow phases:
 - Deployment to Test: 25 min (40 min with infra) - TestFlight/Internal Testing
 - Verification: 20 min @ complexity 5 (scales with complexity)
 
+### Test Automation (Serenity BDD, Playwright, Cypress)
+- **Custom 7-Phase Workflow**: Analysis & Test Planning → Environment Setup → Page Objects & Locators → Step Implementations → Gherkin Integration → Testing & Evidence → Documentation
+- Phase 1 - Analysis & Test Planning: 145 min @ complexity 5
+- Phase 2 - Environment Setup: 63 min @ complexity 5
+- Phase 3 - Page Objects & Locators: 199 min @ complexity 5
+- Phase 4 - Step Implementations: Task-type based
+- Phase 5 - Gherkin Integration: 136 min @ complexity 5
+- Phase 6 - Testing & Evidence: 72 min @ complexity 5
+- Phase 7 - Documentation: 54 min @ complexity 5
+- **AI-Assisted**: 45% time savings across all phases
+- **Common Overhead**: Regression Assurance (+45 min)
+
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
 ## The 7-Phase Manual Workflow
@@ -377,6 +389,7 @@ All parameters stored in `heuristics.json`:
 ### Overhead Activities
 - Database change management (+20 min by default)
 - Cross-team coordination (+30 min by default)
+- Regression assurance & validation (+45 min, for test_automation project type)
 - Security review (disabled by default)
 - Legal/compliance review (disabled by default)
 - Documentation update (disabled by default)

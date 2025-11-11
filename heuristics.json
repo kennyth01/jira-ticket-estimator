@@ -533,6 +533,111 @@
             "scales_with_complexity": false
           }
         }
+      },
+      "test_automation": {
+        "label": "Test Automation (Serenity BDD)",
+        "description": "Test automation development using frameworks like Serenity BDD, Playwright, Cypress",
+        "workflow_phases": {
+          "test_planning": {
+            "label": "Analysis & Test Planning",
+            "description": "Spec analysis, test scenario design, flow coverage planning",
+            "base_minutes_at_complexity_5": 145,
+            "min_minutes": 30,
+            "max_minutes": 240,
+            "scales_with_complexity": true
+          },
+          "environment_setup": {
+            "label": "Environment & Framework Setup",
+            "description": "Test environment configuration, framework dependencies, test data setup",
+            "base_minutes_at_complexity_5": 63,
+            "min_minutes": 15,
+            "max_minutes": 120,
+            "scales_with_complexity": true
+          },
+          "page_objects": {
+            "label": "Page Objects & Locators",
+            "description": "Create page objects, identify and implement locators, element mappings",
+            "base_minutes_at_complexity_5": 199,
+            "min_minutes": 30,
+            "max_minutes": 300,
+            "scales_with_complexity": true
+          },
+          "implementation": {
+            "label": "Step Implementations & Business Logic",
+            "description": "Implement test steps, business logic, validation logic, assertion handlers",
+            "base_minutes_at_complexity_5": 235,
+            "uses_task_type_base_unit": true,
+            "scales_with_complexity": true
+          },
+          "gherkin_integration": {
+            "label": "Step Definitions & Gherkin Integration",
+            "description": "Wire Gherkin steps to implementations, feature file creation/updates",
+            "base_minutes_at_complexity_5": 136,
+            "min_minutes": 20,
+            "max_minutes": 200,
+            "scales_with_complexity": true
+          },
+          "testing": {
+            "label": "Testing & Evidence Collection",
+            "description": "Test execution, screenshot/evidence capture, result validation",
+            "base_minutes_at_complexity_5": 72,
+            "min_minutes": 20,
+            "max_minutes": 180,
+            "scales_with_complexity": true
+          },
+          "documentation": {
+            "label": "Integration & Documentation",
+            "description": "CI/CD integration, test documentation, reporting setup",
+            "base_minutes_at_complexity_5": 54,
+            "min_minutes": 15,
+            "max_minutes": 120,
+            "scales_with_complexity": true
+          }
+        },
+        "ai_assisted_workflow": {
+          "ai_test_planning": {
+            "label": "AI Test Planning",
+            "description": "AI analyzes specs and generates test scenarios, coverage plans",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "test_planning"
+          },
+          "ai_environment_setup": {
+            "label": "AI Environment Setup",
+            "description": "AI generates configuration files, test data factories",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "environment_setup"
+          },
+          "ai_page_objects": {
+            "label": "AI Page Objects",
+            "description": "AI generates page objects and locator strategies",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "page_objects"
+          },
+          "ai_implementation": {
+            "label": "AI Implementation",
+            "description": "AI generates step implementations, business logic, assertions",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "implementation"
+          },
+          "ai_gherkin": {
+            "label": "AI Gherkin Integration",
+            "description": "AI wires Gherkin steps to implementations, generates feature files",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "gherkin_integration"
+          },
+          "ai_testing": {
+            "label": "AI Testing & Evidence",
+            "description": "AI assists with test execution setup, evidence collection automation",
+            "time_savings_percentage": 45,
+            "base_on_manual_phase": "testing"
+          },
+          "ai_documentation": {
+            "label": "AI Documentation",
+            "description": "AI generates CI/CD configs, test documentation, reports",
+            "time_savings_percentage": 46,
+            "base_on_manual_phase": "documentation"
+          }
+        }
       }
     },
 
@@ -635,6 +740,28 @@
           },
           "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
           "notes": "Enable if cross-team coordination is required for infrastructure, deployment, or operational tasks"
+        },
+        "regression_assurance": {
+          "enabled": true,
+          "label": "Regression Assurance & Validation",
+          "description": "Extra time for comprehensive regression testing, validation across multiple flows, and evidence collection for test automation changes",
+          "additional_minutes": 45,
+          "rationale": "Process: Execute regression tests across affected flows + validate OTP/auth paths + collect evidence + stabilize flaky tests",
+          "detection": {
+            "keywords": [
+              "regression", "test automation", "serenity", "automation test", "e2e test",
+              "integration test", "test suite", "test coverage", "test framework",
+              "playwright", "cypress", "selenium", "test scenarios",
+              "flows", "user journey", "validation", "evidence collection"
+            ],
+            "check_title": true,
+            "check_description": true,
+            "check_files": true,
+            "file_patterns": ["*test*", "*spec*", "*e2e*"]
+          },
+          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
+          "applies_to_project_types": ["test_automation"],
+          "notes": "Primarily for test automation projects where changes require extensive regression validation across multiple user flows and scenarios"
         }
       },
       "notes": [
