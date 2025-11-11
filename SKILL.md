@@ -392,13 +392,61 @@ See `references/overhead-activities.md` for configuration guide.
 - All detected adjustments are summed and added to final estimate
 - Can be disabled by setting `"enabled": false` in heuristics.json
 
+### Bucket Rounding
+
+Final estimates are snapped to standardized time buckets using a threshold-based approach.
+
+**Buckets (hours)**: 0, 1, 2, 3, 4, 6, 8 (1d), 12 (1.5d), 16 (2d), 20 (2.5d), 24 (3d), 28 (3.5d), 32 (4d), 36 (4.5d), 40 (5d)
+
+**Day size**: 1d = 8h
+
+**Rule**: Compute the precise grand total (workflow + overhead + manual adjustments), then snap to the nearest bucket using a **threshold-based approach**.
+- For each bucket, calculate the threshold as **midpoint + 25% of the gap to next bucket**
+- If calculated total ≤ threshold, stay at current bucket; otherwise, jump to next bucket
+- If result > 5d (40h) → Split the scope (ticket too large)
+
+**Formula**: `threshold = currentBucket + ((nextBucket - currentBucket) × 0.75)`
+
+#### Threshold Table
+
+| Current Bucket | Next Bucket | Gap | Threshold | Range                       |
+| -------------- | ----------- | --- | --------- | --------------------------- |
+| 0h             | 1h          | 1h  | 0.63h     | 0-0.63h → 0h                |
+| 1h             | 2h          | 1h  | 1.63h     | 0.64-1.63h → 1h             |
+| 2h             | 3h          | 1h  | 2.63h     | 1.64-2.63h → 2h             |
+| 3h             | 4h          | 1h  | 3.63h     | 2.64-3.63h → 3h             |
+| 4h             | 6h          | 2h  | 5h        | 3.64-5h → 4h                |
+| 6h             | 8h          | 2h  | 7h        | 5.01-7h → 6h                |
+| 8h             | 12h         | 4h  | 10h       | 7.01-10h → 8h               |
+| 12h            | 16h         | 4h  | 14h       | 10.01-14h → 12h             |
+| 16h            | 20h         | 4h  | 18h       | 14.01-18h → 16h             |
+| 20h            | 24h         | 4h  | 22h       | 18.01-22h → 20h             |
+| 24h            | 28h         | 4h  | 26h       | 22.01-26h → 24h             |
+| 28h            | 32h         | 4h  | 30h       | 26.01-30h → 28h             |
+| 32h            | 36h         | 4h  | 34h       | 30.01-34h → 32h             |
+| 36h            | 40h         | 4h  | 38h       | 34.01-38h → 36h             |
+| 40h            | -           | -   | -         | 38.01h+ → 40h (split scope) |
+
+**Examples**:
+- **4.07h** → threshold for 4h is 5h → 4.07 ≤ 5 → **stays at 4h** ✓
+- **5.5h** → threshold for 4h is 5h → 5.5 > 5 → **jumps to 6h**
+- **12.59h** → threshold for 12h is 14h → 12.59 ≤ 14 → **stays at 12h** ✓
+- **14.5h** → threshold for 12h is 14h → 14.5 > 14 → **jumps to 16h**
+- **16.5h** → threshold for 16h is 18h → 16.5 ≤ 18 → **stays at 16h** ✓
+- **23.2h** → threshold for 20h is 22h → 23.2 > 22 → **jumps to 24h**
+
+When presenting estimates, show both:
+- Calculated total (e.g., 4.07h)
+- Rounded total (e.g., 4h)
+- Note: "snapped to bucket (threshold: Xh)"
+
 ### Global Settings
 - Task type definitions and keywords
 - Complexity factor scoring guides
 - Complexity weights by task type
 - T-shirt sizing ranges
 - Story points mapping
-- Bucket rounding thresholds
+- Bucket rounding thresholds (see Bucket Rounding section above)
 
 ### Calibration
 
