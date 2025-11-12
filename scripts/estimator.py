@@ -125,9 +125,17 @@ class TicketEstimator:
                                    title: str,
                                    description: str,
                                    task_type: str,
+                                   project_type: str = None,
                                    files_involved: List[str] = None) -> List[Dict]:
         """
         Detect overhead activities based on keywords and file patterns.
+
+        Args:
+            title: Ticket title
+            description: Ticket description
+            task_type: Task type (bug_fix, enhancement, etc.)
+            project_type: Project type (monolithic, serverless, test_automation, etc.)
+            files_involved: List of file paths involved in the change
 
         Returns:
             List of detected overhead activities with time and rationale
@@ -144,8 +152,13 @@ class TicketEstimator:
                 continue
 
             # Check if applies to this task type
-            applies_to = activity.get('applies_to_task_types', [])
-            if applies_to and task_type not in applies_to:
+            applies_to_task_types = activity.get('applies_to_task_types', [])
+            if applies_to_task_types and task_type not in applies_to_task_types:
+                continue
+
+            # Check if applies to this project type
+            applies_to_project_types = activity.get('applies_to_project_types', [])
+            if applies_to_project_types and project_type and project_type not in applies_to_project_types:
                 continue
 
             detection = activity.get('detection', {})
@@ -204,13 +217,23 @@ class TicketEstimator:
         """
         Calculate manual development workflow time breakdown based on project type.
 
-        Uses the 6-phase development process:
+        Standard workflow (7 phases):
         1. Planning & Design
         2. Implementation
         3. Self Review
         4. Testing
         5. Code Review & Revisions
-        6. Deployment to Test + Verification
+        6. Deployment to Test
+        7. Verification
+
+        Test Automation workflow (7 phases):
+        1. Analysis & Test Planning
+        2. Environment & Framework Setup
+        3. Page Objects & Locators
+        4. Step Implementations & Business Logic
+        5. Step Definitions & Gherkin Integration
+        6. Testing & Evidence Collection
+        7. Integration & Documentation
 
         Returns:
             Dict with phase times in minutes and total
@@ -219,6 +242,101 @@ class TicketEstimator:
         task_config = self.config['task_types'][task_type]
         phases = project_config['workflow_phases']
 
+        # Handle test_automation project type with custom workflow
+        if project_type == 'test_automation':
+            # Phase 1: Analysis & Test Planning (scales with complexity)
+            test_planning_base = phases['test_planning']['base_minutes_at_complexity_5']
+            test_planning_time = test_planning_base * scale_factor
+
+            # Phase 2: Environment & Framework Setup (scales with complexity)
+            environment_setup_base = phases['environment_setup']['base_minutes_at_complexity_5']
+            environment_setup_time = environment_setup_base * scale_factor
+
+            # Phase 3: Page Objects & Locators (scales with complexity)
+            page_objects_base = phases['page_objects']['base_minutes_at_complexity_5']
+            page_objects_time = page_objects_base * scale_factor
+
+            # Phase 4: Step Implementations & Business Logic (task-type-specific)
+            base_unit = task_config['base_unit_minutes']
+            if base_unit is None:  # Spike - time-boxed separately
+                implementation_time = 0
+            else:
+                implementation_time = adjusted_complexity * base_unit
+
+            # Phase 5: Step Definitions & Gherkin Integration (scales with complexity)
+            gherkin_integration_base = phases['gherkin_integration']['base_minutes_at_complexity_5']
+            gherkin_integration_time = gherkin_integration_base * scale_factor
+
+            # Phase 6: Testing & Evidence Collection (scales with complexity)
+            testing_base = phases['testing']['base_minutes_at_complexity_5']
+            testing_time = testing_base * scale_factor
+
+            # Phase 7: Integration & Documentation (scales with complexity)
+            documentation_base = phases['documentation']['base_minutes_at_complexity_5']
+            documentation_time = documentation_base * scale_factor
+
+            # Total
+            total_minutes = (test_planning_time + environment_setup_time + page_objects_time +
+                            implementation_time + gherkin_integration_time + testing_time + documentation_time)
+
+            return {
+                'test_planning': round(test_planning_time, 1),
+                'environment_setup': round(environment_setup_time, 1),
+                'page_objects': round(page_objects_time, 1),
+                'implementation': round(implementation_time, 1),
+                'gherkin_integration': round(gherkin_integration_time, 1),
+                'testing': round(testing_time, 1),
+                'documentation': round(documentation_time, 1),
+                'total_minutes': round(total_minutes, 1),
+                'total_hours': round(total_minutes / 60.0, 2),
+                'phases': {
+                    '1_test_planning': {
+                        'label': phases['test_planning']['label'],
+                        'description': phases['test_planning']['description'],
+                        'time_minutes': round(test_planning_time, 1),
+                        'scales_with_complexity': True
+                    },
+                    '2_environment_setup': {
+                        'label': phases['environment_setup']['label'],
+                        'description': phases['environment_setup']['description'],
+                        'time_minutes': round(environment_setup_time, 1),
+                        'scales_with_complexity': True
+                    },
+                    '3_page_objects': {
+                        'label': phases['page_objects']['label'],
+                        'description': phases['page_objects']['description'],
+                        'time_minutes': round(page_objects_time, 1),
+                        'scales_with_complexity': True
+                    },
+                    '4_implementation': {
+                        'label': phases['implementation']['label'],
+                        'description': phases['implementation']['description'],
+                        'time_minutes': round(implementation_time, 1),
+                        'scales_with_complexity': True,
+                        'task_type_base_unit': base_unit
+                    },
+                    '5_gherkin_integration': {
+                        'label': phases['gherkin_integration']['label'],
+                        'description': phases['gherkin_integration']['description'],
+                        'time_minutes': round(gherkin_integration_time, 1),
+                        'scales_with_complexity': True
+                    },
+                    '6_testing': {
+                        'label': phases['testing']['label'],
+                        'description': phases['testing']['description'],
+                        'time_minutes': round(testing_time, 1),
+                        'scales_with_complexity': True
+                    },
+                    '7_documentation': {
+                        'label': phases['documentation']['label'],
+                        'description': phases['documentation']['description'],
+                        'time_minutes': round(documentation_time, 1),
+                        'scales_with_complexity': True
+                    }
+                }
+            }
+
+        # Standard workflow for other project types
         # Phase 1: Planning & Design (scales with complexity)
         planning_base = phases['planning_design']['base_minutes_at_complexity_5']
         planning_time = planning_base * scale_factor
@@ -323,7 +441,7 @@ class TicketEstimator:
         """
         Calculate AI-assisted development workflow time breakdown.
 
-        Uses the 7-phase AI-assisted workflow:
+        Standard AI workflow (7 phases):
         1. AI Planning
         2. AI Implementation
         3. AI Review
@@ -332,12 +450,119 @@ class TicketEstimator:
         6. Deploy to Test
         7. Test Verification
 
+        Test Automation AI workflow (7 phases):
+        1. AI Test Planning
+        2. AI Environment Setup
+        3. AI Page Objects
+        4. AI Implementation
+        5. AI Gherkin Integration
+        6. AI Testing & Evidence
+        7. AI Documentation
+
         Returns:
             Dict with phase times in minutes and total
         """
         project_config = self.config['project_types'][project_type]
         ai_phases = project_config['ai_assisted_workflow']
 
+        # Handle test_automation project type with custom AI workflow
+        if project_type == 'test_automation':
+            # Phase 1: AI Test Planning (time savings from manual)
+            ai_test_planning_config = ai_phases['ai_test_planning']
+            savings_pct = ai_test_planning_config['time_savings_percentage'] / 100.0
+            ai_test_planning_time = manual_workflow['test_planning'] * (1 - savings_pct)
+
+            # Phase 2: AI Environment Setup (time savings from manual)
+            ai_environment_config = ai_phases['ai_environment_setup']
+            savings_pct = ai_environment_config['time_savings_percentage'] / 100.0
+            ai_environment_time = manual_workflow['environment_setup'] * (1 - savings_pct)
+
+            # Phase 3: AI Page Objects (time savings from manual)
+            ai_page_objects_config = ai_phases['ai_page_objects']
+            savings_pct = ai_page_objects_config['time_savings_percentage'] / 100.0
+            ai_page_objects_time = manual_workflow['page_objects'] * (1 - savings_pct)
+
+            # Phase 4: AI Implementation (time savings from manual)
+            ai_implementation_config = ai_phases['ai_implementation']
+            savings_pct = ai_implementation_config['time_savings_percentage'] / 100.0
+            ai_implementation_time = manual_workflow['implementation'] * (1 - savings_pct)
+
+            # Phase 5: AI Gherkin Integration (time savings from manual)
+            ai_gherkin_config = ai_phases['ai_gherkin']
+            savings_pct = ai_gherkin_config['time_savings_percentage'] / 100.0
+            ai_gherkin_time = manual_workflow['gherkin_integration'] * (1 - savings_pct)
+
+            # Phase 6: AI Testing & Evidence (time savings from manual)
+            ai_testing_config = ai_phases['ai_testing']
+            savings_pct = ai_testing_config['time_savings_percentage'] / 100.0
+            ai_testing_time = manual_workflow['testing'] * (1 - savings_pct)
+
+            # Phase 7: AI Documentation (time savings from manual)
+            ai_documentation_config = ai_phases['ai_documentation']
+            savings_pct = ai_documentation_config['time_savings_percentage'] / 100.0
+            ai_documentation_time = manual_workflow['documentation'] * (1 - savings_pct)
+
+            # Total
+            total_minutes = (ai_test_planning_time + ai_environment_time + ai_page_objects_time +
+                            ai_implementation_time + ai_gherkin_time + ai_testing_time + ai_documentation_time)
+
+            return {
+                'ai_test_planning': round(ai_test_planning_time, 1),
+                'ai_environment_setup': round(ai_environment_time, 1),
+                'ai_page_objects': round(ai_page_objects_time, 1),
+                'ai_implementation': round(ai_implementation_time, 1),
+                'ai_gherkin': round(ai_gherkin_time, 1),
+                'ai_testing': round(ai_testing_time, 1),
+                'ai_documentation': round(ai_documentation_time, 1),
+                'total_minutes': round(total_minutes, 1),
+                'total_hours': round(total_minutes / 60.0, 2),
+                'phases': {
+                    '1_ai_test_planning': {
+                        'label': ai_phases['ai_test_planning']['label'],
+                        'description': ai_phases['ai_test_planning']['description'],
+                        'time_minutes': round(ai_test_planning_time, 1),
+                        'time_savings_percentage': ai_phases['ai_test_planning']['time_savings_percentage']
+                    },
+                    '2_ai_environment_setup': {
+                        'label': ai_phases['ai_environment_setup']['label'],
+                        'description': ai_phases['ai_environment_setup']['description'],
+                        'time_minutes': round(ai_environment_time, 1),
+                        'time_savings_percentage': ai_phases['ai_environment_setup']['time_savings_percentage']
+                    },
+                    '3_ai_page_objects': {
+                        'label': ai_phases['ai_page_objects']['label'],
+                        'description': ai_phases['ai_page_objects']['description'],
+                        'time_minutes': round(ai_page_objects_time, 1),
+                        'time_savings_percentage': ai_phases['ai_page_objects']['time_savings_percentage']
+                    },
+                    '4_ai_implementation': {
+                        'label': ai_phases['ai_implementation']['label'],
+                        'description': ai_phases['ai_implementation']['description'],
+                        'time_minutes': round(ai_implementation_time, 1),
+                        'time_savings_percentage': ai_phases['ai_implementation']['time_savings_percentage']
+                    },
+                    '5_ai_gherkin': {
+                        'label': ai_phases['ai_gherkin']['label'],
+                        'description': ai_phases['ai_gherkin']['description'],
+                        'time_minutes': round(ai_gherkin_time, 1),
+                        'time_savings_percentage': ai_phases['ai_gherkin']['time_savings_percentage']
+                    },
+                    '6_ai_testing': {
+                        'label': ai_phases['ai_testing']['label'],
+                        'description': ai_phases['ai_testing']['description'],
+                        'time_minutes': round(ai_testing_time, 1),
+                        'time_savings_percentage': ai_phases['ai_testing']['time_savings_percentage']
+                    },
+                    '7_ai_documentation': {
+                        'label': ai_phases['ai_documentation']['label'],
+                        'description': ai_phases['ai_documentation']['description'],
+                        'time_minutes': round(ai_documentation_time, 1),
+                        'time_savings_percentage': ai_phases['ai_documentation']['time_savings_percentage']
+                    }
+                }
+            }
+
+        # Standard AI workflow for other project types
         # Phase 1: AI Planning (time savings from manual planning)
         ai_planning_config = ai_phases['ai_planning']
         savings_pct = ai_planning_config['time_savings_percentage'] / 100.0
@@ -553,7 +778,7 @@ class TicketEstimator:
         Args:
             title: Ticket title
             description: Ticket description
-            project_type: Project architecture type (monolithic, serverless, frontend, fullstack, mobile)
+            project_type: Project architecture type (monolithic, serverless, frontend, fullstack, mobile, test_automation)
             issue_type: Jira issue type (Bug, Story, Task, Spike, etc.)
             complexity_scores: Dict with keys: scope_size, technical_complexity,
                              testing_requirements, risk_and_unknowns, dependencies
@@ -649,11 +874,13 @@ class TicketEstimator:
             manual_workflow['implementation'] += file_touch_overhead['overhead_minutes']
             manual_workflow['total_minutes'] += file_touch_overhead['overhead_minutes']
             manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
-            manual_workflow['phases']['2_implementation']['time_minutes'] += file_touch_overhead['overhead_minutes']
-            manual_workflow['phases']['2_implementation']['file_touch_overhead'] = file_touch_overhead
+            # Find the implementation phase key (differs by project type)
+            impl_phase_key = '4_implementation' if project_type == 'test_automation' else '2_implementation'
+            manual_workflow['phases'][impl_phase_key]['time_minutes'] += file_touch_overhead['overhead_minutes']
+            manual_workflow['phases'][impl_phase_key]['file_touch_overhead'] = file_touch_overhead
 
         # Detect overhead activities
-        overhead_activities = self.detect_overhead_activities(title, description, task_type, files_involved=None)
+        overhead_activities = self.detect_overhead_activities(title, description, task_type, project_type=project_type, files_involved=None)
 
         # Calculate total overhead time
         overhead_minutes = sum(activity['additional_minutes'] for activity in overhead_activities)
