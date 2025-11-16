@@ -169,13 +169,13 @@
         "ai_assisted_workflow": {
           "ai_planning": {
             "label": "AI Planning",
-            "description": "AI generates infrastructure design, Lambda structure, IAM policies",
+            "description": "AI generates infrastructure design, Lambda structure, Serverless Framework setup",
             "time_savings_percentage": 65,
             "base_on_manual_phase": "planning_design"
           },
           "ai_implementation": {
             "label": "AI Implementation",
-            "description": "AI generates Lambda handlers, IaC code (CDK/SAM/Terraform)",
+            "description": "AI generates Lambda handlers and Serverless Framework YAML configuration",
             "time_savings_percentage": 60,
             "base_on_manual_phase": "implementation"
           },
@@ -190,11 +190,11 @@
             "description": "Human validates IaC, tests Lambda locally, validates integrations",
             "manual_phase_testing_percentage": 65,
             "manual_phase_self_review_percentage": 100,
-            "notes": "Takes 100% of manual self_review + 65% of manual testing (IaC needs careful validation)"
+            "notes": "Takes 100% of manual self_review + 65% of manual testing (needs careful validation)"
           },
           "iterations": {
             "label": "Iterations & Vibe Coding",
-            "description": "Fix IAM issues, adjust Lambda config, refine infrastructure code",
+            "description": "Fix issues, adjust Lambda config, refine infrastructure code",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
             "max_minutes": 120,
@@ -865,7 +865,7 @@
       "net_new": {
         "label": "Net-New Feature",
         "description": "Building something that doesn't exist in the codebase",
-        "base_unit_minutes": 45,
+        "base_unit_minutes": 54,
         "complexity_multiplier": 1.0,
         "human_multiplier": 3.0,
         "keywords": ["new", "create", "build", "implement"],
@@ -879,7 +879,7 @@
       "enhancement": {
         "label": "Enhancement/Extension",
         "description": "Extending existing functionality with new capabilities",
-        "base_unit_minutes": 34,
+        "base_unit_minutes": 41,
         "complexity_multiplier": 0.75,
         "human_multiplier": 2.75,
         "keywords": ["add", "extend", "enhance", "support"],
@@ -894,7 +894,7 @@
       "refactor": {
         "label": "Refactor/Hardening",
         "description": "Improving existing code without changing behavior",
-        "base_unit_minutes": 26,
+        "base_unit_minutes": 31,
         "complexity_multiplier": 0.58,
         "human_multiplier": 2.5,
         "keywords": ["refactor", "improve", "optimize", "harden", "strengthen", "type", "validate"],
@@ -908,7 +908,7 @@
       "bug_fix": {
         "label": "Bug Fix",
         "description": "Fixing incorrect behavior in existing code",
-        "base_unit_minutes": 19,
+        "base_unit_minutes": 23,
         "complexity_multiplier": 0.42,
         "human_multiplier": 2.5,
         "keywords": ["fix", "bug", "defect", "issue", "broken", "error"],
