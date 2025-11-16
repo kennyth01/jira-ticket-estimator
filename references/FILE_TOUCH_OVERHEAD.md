@@ -25,7 +25,7 @@ Overhead Time = File Count × Base Time per File × Complexity Multiplier
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `base_time_per_file_minutes` | 2.5 min | Time to open, read, understand, and modify one file |
+| `base_time_per_file_minutes` | 5 min | Time to open, read, understand, and modify one file |
 | `minimum_files_for_overhead` | 20 files | Threshold below which no overhead is applied |
 | `maximum_overhead_minutes` | 300 min | Cap to prevent runaway estimates |
 
@@ -35,9 +35,9 @@ The multiplier scales based on raw complexity (not adjusted):
 
 | Complexity Level | Range | Multiplier | Meaning |
 |-----------------|-------|------------|---------|
-| **Low** | < 3.0/10 | 0.6× | Simple find/replace, mechanical changes |
-| **Medium** | 3.0 - 6.0/10 | 1.0× | Moderate changes with some logic |
-| **High** | > 6.0/10 | 1.5× | Complex architectural changes |
+| **Low** | < 3.0/10 | 1.0× | Simple find/replace, mechanical changes |
+| **Medium** | 3.0 - 6.0/10 | 1.5× | Moderate changes with some logic |
+| **High** | > 6.0/10 | 1.8× | Complex architectural changes |
 
 ## Usage
 
@@ -71,15 +71,16 @@ print(result['file_touch_overhead'])
 ```json
 {
   "enabled": true,
-  "overhead_minutes": 225.0,
-  "overhead_hours": 3.75,
+  "overhead_minutes": 300,
+  "overhead_hours": 5.0,
   "file_count": 60,
-  "base_time_per_file": 2.5,
-  "complexity_multiplier": 1.5,
+  "base_time_per_file": 5,
+  "complexity_multiplier": 1.8,
   "complexity_level": "high",
   "raw_complexity": 7.65,
-  "calculation": "60 files × 2.5 min × 1.5 = 225.0 min",
-  "capped": false,
+  "calculation": "60 files × 5 min × 1.8 = 540.0 min",
+  "capped": true,
+  "maximum_overhead": 300,
   "details": "60 files with high complexity (7.7/10)"
 }
 ```
@@ -94,11 +95,12 @@ print(result['file_touch_overhead'])
 
 **Calculation:**
 ```
-60 files × 2.5 min × 1.5 (high complexity) = 225 minutes (3.75 hours)
+60 files × 5 min × 1.8 (high complexity) = 540 minutes
+Capped at maximum: 300 minutes (5 hours)
 ```
 
 **Impact:**
-- Manual Development: 5.90h → **9.65h** (+3.75h)
+- Manual Development: 6.0h → **11.0h** (+5h)
 - AI-Assisted: 3.32h → **3.32h** (no change)
 
 ### Example 2: Medium Refactor (30 files, high complexity)
@@ -109,11 +111,11 @@ print(result['file_touch_overhead'])
 
 **Calculation:**
 ```
-30 files × 2.5 min × 1.5 (high complexity) = 112.5 minutes (1.88 hours)
+30 files × 5 min × 1.8 (high complexity) = 270 minutes (4.5 hours)
 ```
 
 **Impact:**
-- Manual Development: 5.90h → **7.78h** (+1.88h)
+- Manual Development: 6.0h → **10.5h** (+4.5h)
 - AI-Assisted: 3.32h → **3.32h** (no change)
 
 ### Example 3: Small Task (15 files)
@@ -128,7 +130,7 @@ Below minimum threshold (20 files) → 0 minutes overhead
 ```
 
 **Impact:**
-- Manual Development: 5.90h (no change)
+- Manual Development: 6.0h (no change)
 - AI-Assisted: 3.32h (no change)
 
 ## Configuration
@@ -140,14 +142,14 @@ Edit `heuristics.json` to customize the behavior:
   "file_touch_overhead": {
     "enabled": true,
     "applies_to_workflow": "manual_only",
-    "base_time_per_file_minutes": 2.5,
+    "base_time_per_file_minutes": 5,
     "minimum_files_for_overhead": 20,
     "maximum_overhead_minutes": 300,
     "complexity_scaling": {
       "enabled": true,
-      "low_complexity_multiplier": 0.6,
-      "medium_complexity_multiplier": 1.0,
-      "high_complexity_multiplier": 1.5,
+      "low_complexity_multiplier": 1.0,
+      "medium_complexity_multiplier": 1.5,
+      "high_complexity_multiplier": 1.8,
       "thresholds": {
         "low": 3.0,
         "medium": 6.0,
@@ -173,7 +175,7 @@ Edit `heuristics.json` to customize the behavior:
 - Read and understand surrounding code
 - Navigate between files
 - Context switch between different areas
-- Each file takes ~2-3 minutes minimum
+- Each file takes ~5 minutes minimum
 
 **AI-Assisted Development:**
 - AI can grep entire codebase in seconds
@@ -187,11 +189,11 @@ Edit `heuristics.json` to customize the behavior:
 **SATHREE-40524 - Messages Cleanup:**
 - **Files affected**: 60+
 - **Manual estimate without overhead**: 6h
-- **Manual estimate with overhead**: 12h (+3.75h overhead)
-- **AI-assisted estimate**: 6h (no overhead)
+- **Manual estimate with overhead**: 11h (+5h overhead, capped at 300 min)
+- **AI-assisted estimate**: 4h (no overhead)
 - **Original Jira estimate**: 26h (includes unknowns and coordination)
 
-The feature bridges the gap between "ideal time" (6h) and "realistic time" (12h), making the 26h original estimate more understandable (includes testing, coordination, unknowns).
+The feature bridges the gap between "ideal time" (6h) and "realistic time" (11h), making the 26h original estimate more understandable (includes testing, coordination, unknowns).
 
 ## Benefits
 

@@ -13,14 +13,25 @@ import json
 import math
 from typing import Dict, List, Tuple, Optional
 
+# Constants
+COMPLEXITY_REFERENCE_POINT = 5.0  # Midpoint of 1-10 complexity scale
+MIN_COMPLEXITY_SCORE = 1
+MAX_COMPLEXITY_SCORE = 10
+DEFAULT_SELF_REVIEW_MINUTES = 30
+
+# Config cache to avoid re-parsing JSON
+_config_cache = {}
+
 
 class TicketEstimator:
     """Main estimator class with all calculation logic."""
 
     def __init__(self, heuristics_file='heuristics.json'):
-        """Load configuration from heuristics.json."""
-        with open(heuristics_file, 'r') as f:
-            self.config = json.load(f)['estimation_config']
+        """Load configuration from heuristics.json with caching."""
+        if heuristics_file not in _config_cache:
+            with open(heuristics_file, 'r') as f:
+                _config_cache[heuristics_file] = json.load(f)['estimation_config']
+        self.config = _config_cache[heuristics_file]
 
     def classify_task_type(self, title: str, description: str, issue_type: str = None) -> Tuple[str, List[str]]:
         """
@@ -45,16 +56,18 @@ class TicketEstimator:
             keywords = task_config.get('keywords', [])
             exclude_keywords = task_config.get('exclude_keywords', [])
 
-            # Check if any keyword matches
+            # Check if any keyword matches (using word boundaries)
             keyword_matches = []
             for keyword in keywords:
-                if keyword in title_lower or keyword in desc_lower:
+                pattern = r'\b' + re.escape(keyword) + r'\b'
+                if re.search(pattern, title_lower) or re.search(pattern, desc_lower):
                     keyword_matches.append(keyword)
 
-            # Check if any exclude keyword matches
+            # Check if any exclude keyword matches (using word boundaries)
             exclude_matches = []
             for exclude in exclude_keywords:
-                if exclude in title_lower or exclude in desc_lower:
+                pattern = r'\b' + re.escape(exclude) + r'\b'
+                if re.search(pattern, title_lower) or re.search(pattern, desc_lower):
                     exclude_matches.append(exclude)
 
             # If we have keyword matches and no exclude matches, classify
@@ -79,6 +92,21 @@ class TicketEstimator:
         Returns:
             Tuple of (raw_complexity, adjusted_complexity, scale_factor)
         """
+        # Validate all complexity scores
+        scores = {
+            'scope_size': scope_score,
+            'technical_complexity': technical_score,
+            'testing_requirements': testing_score,
+            'risk_and_unknowns': risk_score,
+            'dependencies': dependencies_score
+        }
+
+        for factor, score in scores.items():
+            if not MIN_COMPLEXITY_SCORE <= score <= MAX_COMPLEXITY_SCORE:
+                raise ValueError(
+                    f"{factor} must be between {MIN_COMPLEXITY_SCORE}-{MAX_COMPLEXITY_SCORE}, got {score}"
+                )
+
         # Get task-type-specific weights
         weights = self.config['complexity_weights'][task_type]
 
@@ -94,10 +122,14 @@ class TicketEstimator:
         # Apply task type multiplier
         task_config = self.config['task_types'][task_type]
         multiplier = task_config['complexity_multiplier']
-        adjusted_complexity = raw_complexity * multiplier
 
-        # Calculate scale factor
-        scale_factor = adjusted_complexity / 5.0
+        # Handle spike which has None multiplier (time-boxed, complexity doesn't scale)
+        if multiplier is None:
+            adjusted_complexity = raw_complexity  # No adjustment for spikes
+            scale_factor = 1.0  # Fixed scale factor for spikes
+        else:
+            adjusted_complexity = raw_complexity * multiplier
+            scale_factor = adjusted_complexity / COMPLEXITY_REFERENCE_POINT
 
         return raw_complexity, adjusted_complexity, scale_factor
 
@@ -168,7 +200,7 @@ class TicketEstimator:
             check_files = detection.get('check_files', False)
             file_patterns = detection.get('file_patterns', [])
 
-            # Check for keyword matches
+            # Check for keyword matches (using word boundaries)
             matched_keywords = []
             text_to_check = ''
 
@@ -177,9 +209,10 @@ class TicketEstimator:
             if check_description:
                 text_to_check += ' ' + description.lower()
 
-            # Check text for keywords
+            # Check text for keywords with word boundaries
             for keyword in keywords:
-                if keyword.lower() in text_to_check:
+                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                if re.search(pattern, text_to_check):
                     matched_keywords.append(keyword)
 
             # Check file patterns if files provided
@@ -258,8 +291,10 @@ class TicketEstimator:
 
             # Phase 4: Step Implementations & Business Logic (task-type-specific)
             base_unit = task_config['base_unit_minutes']
-            if base_unit is None:  # Spike - time-boxed separately
-                implementation_time = 0
+            if base_unit is None:  # Spike - use time-box
+                time_box_hours = task_config.get('time_box_hours', [2])
+                # Use middle value from time-box
+                implementation_time = time_box_hours[len(time_box_hours) // 2] * 60
             else:
                 implementation_time = adjusted_complexity * base_unit
 
@@ -343,8 +378,10 @@ class TicketEstimator:
 
         # Phase 2: Implementation (task-type-specific base unit × adjusted complexity)
         base_unit = task_config['base_unit_minutes']
-        if base_unit is None:  # Spike - time-boxed separately
-            implementation_time = 0
+        if base_unit is None:  # Spike - use time-box
+            time_box_hours = task_config.get('time_box_hours', [2])
+            # Use middle value from time-box
+            implementation_time = time_box_hours[len(time_box_hours) // 2] * 60
         else:
             implementation_time = adjusted_complexity * base_unit
 
@@ -717,20 +754,20 @@ class TicketEstimator:
             }
 
         # Get base time per file
-        base_time = config.get('base_time_per_file_minutes', 2.5)
+        base_time = config.get('base_time_per_file_minutes', 5)
 
         # Calculate complexity multiplier
         scaling_config = config.get('complexity_scaling', {})
         if scaling_config.get('enabled', True):
             thresholds = scaling_config.get('thresholds', {})
             if raw_complexity < thresholds.get('low', 3.0):
-                multiplier = scaling_config.get('low_complexity_multiplier', 0.6)
+                multiplier = scaling_config.get('low_complexity_multiplier', 1.0)
                 complexity_level = 'low'
             elif raw_complexity < thresholds.get('medium', 6.0):
-                multiplier = scaling_config.get('medium_complexity_multiplier', 1.0)
+                multiplier = scaling_config.get('medium_complexity_multiplier', 1.5)
                 complexity_level = 'medium'
             else:
-                multiplier = scaling_config.get('high_complexity_multiplier', 1.5)
+                multiplier = scaling_config.get('high_complexity_multiplier', 1.8)
                 complexity_level = 'high'
         else:
             multiplier = 1.0
@@ -762,6 +799,21 @@ class TicketEstimator:
             'details': f'{file_count} files with {complexity_level} complexity ({raw_complexity:.1f}/10)'
         }
 
+    def _find_implementation_phase_key(self, phases: Dict) -> str:
+        """
+        Dynamically find the implementation phase key.
+
+        Args:
+            phases: Dict of workflow phases
+
+        Returns:
+            Phase key containing 'implementation'
+        """
+        for key in phases.keys():
+            if 'implementation' in key.lower():
+                return key
+        raise ValueError("No implementation phase found in workflow phases")
+
     def estimate_ticket(self,
                        title: str,
                        description: str,
@@ -787,7 +839,7 @@ class TicketEstimator:
             has_infrastructure_changes: Flag for infrastructure changes
             file_count: Number of unique files to be modified (CRITICAL for file_touch_overhead).
                        Count files from Grep/Glob searches during reconnaissance.
-                       Adds 2.5 min/file overhead to manual workflow (20 file minimum).
+                       Adds 5 min/file overhead to manual workflow (20 file minimum).
                        Forgetting this parameter can underestimate by 2-5 hours for large refactors!
 
         Returns:
@@ -837,24 +889,21 @@ class TicketEstimator:
             complexity_scores['dependencies']
         )
 
-        # Validate file_count for large scope
+        # Enforce file_count for large scope
         if complexity_scores['scope_size'] >= 7 and (file_count is None or file_count == 0):
-            import warnings
-            warnings.warn(
+            raise ValueError(
                 f"\n{'=' * 70}\n"
-                f"WARNING: High scope_size ({complexity_scores['scope_size']}/10) detected but file_count=0!\n"
+                f"ERROR: High scope_size ({complexity_scores['scope_size']}/10) detected but file_count is missing!\n"
                 f"\n"
-                f"File touch overhead may be significantly underestimated.\n"
-                f"Consider running repository reconnaissance to count affected files:\n"
+                f"File touch overhead will be significantly underestimated.\n"
+                f"Please run repository reconnaissance to count affected files:\n"
                 f"  - Use Grep/Glob to find all files to be modified\n"
                 f"  - Count unique files across all searches\n"
                 f"  - Pass file_count parameter to estimate_ticket()\n"
                 f"\n"
                 f"Impact: For large refactors (50-100+ files), this can add 2-5 hours\n"
                 f"to the manual workflow estimate.\n"
-                f"{'=' * 70}\n",
-                UserWarning,
-                stacklevel=2
+                f"{'=' * 70}\n"
             )
 
         # Get sizing
@@ -874,8 +923,8 @@ class TicketEstimator:
             manual_workflow['implementation'] += file_touch_overhead['overhead_minutes']
             manual_workflow['total_minutes'] += file_touch_overhead['overhead_minutes']
             manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
-            # Find the implementation phase key (differs by project type)
-            impl_phase_key = '4_implementation' if project_type == 'test_automation' else '2_implementation'
+            # Find implementation phase dynamically
+            impl_phase_key = self._find_implementation_phase_key(manual_workflow['phases'])
             manual_workflow['phases'][impl_phase_key]['time_minutes'] += file_touch_overhead['overhead_minutes']
             manual_workflow['phases'][impl_phase_key]['file_touch_overhead'] = file_touch_overhead
 

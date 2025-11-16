@@ -399,16 +399,16 @@ Overhead Time = File Count × Base Time per File × Complexity Multiplier
 ```
 
 **Default Parameters:**
-- Base time per file: **2.5 minutes** (open, read, understand, modify)
+- Base time per file: **5 minutes** (open, read, understand, modify)
 - Minimum threshold: **20 files** (no overhead below this)
 - Maximum cap: **300 minutes** (5 hours)
 
 **Complexity Scaling:**
 | Complexity | Range | Multiplier | Meaning |
 |-----------|-------|------------|---------|
-| Low | < 3.0/10 | 0.6× | Simple find/replace |
-| Medium | 3.0-6.0/10 | 1.0× | Moderate changes |
-| High | > 6.0/10 | 1.5× | Complex architectural changes |
+| Low | < 3.0/10 | 1.0× | Simple find/replace |
+| Medium | 3.0-6.0/10 | 1.5× | Moderate changes |
+| High | > 6.0/10 | 1.8× | Complex architectural changes |
 
 ### Example Usage
 
@@ -419,9 +419,9 @@ Task type: refactor
 ```
 
 **Result for 60 files at complexity 7.65/10:**
-- Overhead: 60 × 2.5 min × 1.5 (high) = **225 min (3.75h)**
-- Manual estimate: 6h → **12h** (+3.75h overhead)
-- AI-assisted: 4h → **6h** (NO overhead - AI batches files)
+- Overhead: 60 × 5 min × 1.8 (high) = **540 min, capped at 300 min (5h)**
+- Manual estimate: 6h → **11h** (+5h overhead)
+- AI-assisted: 4h → **4h** (NO overhead - AI batches files)
 
 ### Real-World Example
 
@@ -429,17 +429,17 @@ Task type: refactor
 - Files affected: 60+ (32 sync files + 28 extendables)
 - Complexity: 7.65/10 (high)
 - Without overhead: 6h manual (unrealistic)
-- With overhead: 12h manual (realistic)
-- AI-assisted: 6h (no overhead needed)
+- With overhead: 11h manual (6h + 5h capped overhead - realistic)
+- AI-assisted: 4h (no overhead needed)
 
 ### Why Manual Only?
 
 **Manual Development:**
-- Must open each file individually (~30 sec)
-- Read and understand context (~1 min)
-- Make changes carefully (~1 min)
+- Must open each file individually (~1 min)
+- Read and understand context (~2 min)
+- Make changes carefully (~1.5 min)
 - Context switch between files (~30 sec)
-- **Total: ~2.5-3 min per file**
+- **Total: ~5 min per file**
 
 **AI-Assisted Development:**
 - Grep entire codebase (10 sec)
@@ -456,18 +456,18 @@ Edit `heuristics.json` to customize:
   "file_touch_overhead": {
     "enabled": true,
     "applies_to_workflow": "manual_only",
-    "base_time_per_file_minutes": 2.5,
+    "base_time_per_file_minutes": 5,
     "minimum_files_for_overhead": 20,
     "maximum_overhead_minutes": 300,
     "complexity_scaling": {
       "enabled": true,
-      "low_complexity_multiplier": 0.6,
-      "medium_complexity_multiplier": 1.0,
-      "high_complexity_multiplier": 1.5,
+      "low_complexity_multiplier": 1.0,
+      "medium_complexity_multiplier": 1.5,
+      "high_complexity_multiplier": 1.8,
       "thresholds": {
         "low": 3.0,
         "medium": 6.0,
-        "high": 10.0
+        "high": 9.0
       }
     }
   }
@@ -669,7 +669,7 @@ AI-assisted development typically provides 40-50% time savings:
 
 **Example 2 - Manual Adjustment**: A ticket with "(+4h)" for manual QA testing: 6h manual workflow + 4h adjustment = 10h total; 3h AI workflow + 4h adjustment = 7h total (30% overall savings, down from 50% workflow-only savings).
 
-**Example 3 - File Touch Overhead**: A refactor touching 60 files: 6h manual base + 3.75h file overhead = 9.75h manual; 3h AI base + 0h file overhead = 3h AI (69% savings! File overhead amplifies AI advantage).
+**Example 3 - File Touch Overhead**: A refactor touching 60 files: 6h manual base + 5h file overhead (capped) = 11h manual; 3h AI base + 0h file overhead = 3h AI (73% savings! File overhead amplifies AI advantage).
 
 **Note**: AI-assisted savings assume:
 - Access to AI coding tools (Claude, Cursor, GitHub Copilot)
@@ -746,5 +746,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-11-12
-**Version**: 2.4 (added test_automation project type for Serenity BDD/Playwright/Cypress + regression_assurance overhead)
+**Last Updated**: 2025-11-15
+**Version**: 2.5 (fixed file touch overhead thresholds, added input validation, improved spike handling, added config caching, word boundary matching)

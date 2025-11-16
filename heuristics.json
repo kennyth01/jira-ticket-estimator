@@ -817,13 +817,13 @@
       "complexity_scaling": {
         "enabled": true,
         "description": "More complex changes require more time per file",
-        "low_complexity_multiplier": 1,
+        "low_complexity_multiplier": 1.0,
         "medium_complexity_multiplier": 1.5,
         "high_complexity_multiplier": 1.8,
         "thresholds": {
-          "low": 6.0,
-          "medium": 11.0,
-          "high": 16.0
+          "low": 3.0,
+          "medium": 6.0,
+          "high": 9.0
         }
       },
       "minimum_files_for_overhead": 20,
@@ -841,20 +841,20 @@
           "files": 60,
           "complexity": 7.5,
           "multiplier": 1.5,
-          "calculation": "60 files × 2.5 min × 1.5 = 225 minutes",
-          "rationale": "Large refactor affecting 60 files with high complexity"
+          "calculation": "60 files × 5 min × 1.5 = 450 minutes",
+          "rationale": "Large refactor affecting 60 files with high complexity (7.5/10 → medium multiplier)"
         },
         {
           "files": 30,
-          "complexity": 4.0,
+          "complexity": 2.5,
           "multiplier": 1.0,
-          "calculation": "30 files × 2.5 min × 1.0 = 75 minutes",
-          "rationale": "Medium refactor with moderate complexity"
+          "calculation": "30 files × 5 min × 1.0 = 150 minutes",
+          "rationale": "Medium refactor with low complexity (2.5/10 → low multiplier)"
         },
         {
           "files": 15,
           "complexity": 2.0,
-          "multiplier": 0.6,
+          "multiplier": 1.0,
           "calculation": "0 minutes (below minimum threshold of 20 files)",
           "rationale": "Small task, no overhead applied"
         }
@@ -1019,6 +1019,13 @@
         "testing_requirements": 30,
         "risk_and_unknowns": 10,
         "dependencies": 35
+      },
+      "spike": {
+        "scope_size": 15,
+        "technical_complexity": 20,
+        "testing_requirements": 10,
+        "risk_and_unknowns": 35,
+        "dependencies": 20
       }
     },
 
@@ -1070,7 +1077,7 @@
     },
 
     "bucket_rounding": {
-      "description": "Round final estimates to standardized buckets using threshold-based approach. Threshold = midpoint + 25% of gap to next bucket (or equivalently: currentBucket + ((nextBucket - currentBucket) × 0.75))",
+      "description": "Round final estimates to standardized buckets using threshold-based approach. Threshold = current + 75% of gap to next bucket",
       "buckets_hours": [0, 1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40],
       "day_hours": 8,
       "max_hours": 40,

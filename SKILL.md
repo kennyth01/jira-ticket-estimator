@@ -85,9 +85,9 @@ file_count = len(all_files)
 
 **File Count Impact (file_touch_overhead):**
 - **< 20 files**: No overhead
-- **20-50 files**: ~50-125 min overhead (0.8-2h)
-- **50-100 files**: ~125-250 min overhead (2-4h)
-- **100+ files**: ~250-300 min overhead (4-5h, capped)
+- **20-30 files (low complexity <3.0)**: ~100-150 min overhead (1.7-2.5h)
+- **30-50 files (medium complexity 3.0-6.0)**: ~150-375 min overhead (2.5-6.3h)
+- **50-60 files (high complexity >6.0)**: ~450-540 min overhead (7.5-9h, may hit cap at 5h/300min)
 
 **Why this matters**: Manual development has mechanical overhead (opening files, reading context, making changes). AI can batch process efficiently, so overhead only applies to manual workflow.
 
@@ -414,7 +414,7 @@ Final estimates are snapped to standardized time buckets using a threshold-based
 **Day size**: 1d = 8h
 
 **Rule**: Compute the precise grand total (workflow + overhead + manual adjustments), then snap to the nearest bucket using a **threshold-based approach**.
-- For each bucket, calculate the threshold as **midpoint + 25% of the gap to next bucket**
+- For each bucket, calculate the threshold as **current + 75% of gap to next bucket**
 - If calculated total ≤ threshold, stay at current bucket; otherwise, jump to next bucket
 - If result > 5d (40h) → Split the scope (ticket too large)
 
