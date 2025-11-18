@@ -25,7 +25,7 @@ Invoke when:
 
 **Optional Flags**:
 - `--project-type`: monolithic|serverless|frontend|fullstack|mobile|test_automation (default: monolithic)
-- `--task-type`: Manual override for task classification
+- `--task-type-override`: Manual override for task classification
 - `--team-velocity`: Velocity factor for story points (default: 1.0)
 - `--has-infrastructure-changes`: Flag for infrastructure changes
 

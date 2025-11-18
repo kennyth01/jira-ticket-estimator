@@ -35,48 +35,109 @@ class TicketEstimator:
 
     def classify_task_type(self, title: str, description: str, issue_type: str = None) -> Tuple[str, List[str]]:
         """
-        Classify ticket into task type based on keywords and issue type.
+        Classify ticket into task type based on characteristics, context clues, and keywords.
+
+        Uses characteristic-based classification (not purely keyword-based):
+        - Analyzes context clues like "existing", "current", "improve"
+        - Considers the nature of work (quality improvements vs new functionality)
+        - Uses keywords as supporting evidence, not primary classification
 
         Returns:
             Tuple of (task_type_key, reasons)
         """
         title_lower = title.lower()
         desc_lower = description.lower()
+        combined_text = f"{title_lower} {desc_lower}"
         reasons = []
 
-        # Check issue type first
+        # Check issue type first (strongest signal)
         if issue_type:
             for task_key, task_config in self.config['task_types'].items():
                 if 'issue_types' in task_config and issue_type in task_config['issue_types']:
                     reasons.append(f"Issue type is '{issue_type}'")
                     return task_key, reasons
 
-        # Check keywords for each task type
+        # Detect context clues for characteristic-based classification
+        context_clues = {
+            'existing_code': bool(re.search(r'\b(existing|current|already exists?)\b', combined_text)),
+            'from_scratch': bool(re.search(r'\b(from scratch|brand new|first (integration|implementation))\b', combined_text)),
+            'quality_improvement': bool(re.search(r'\b(type safety|type guard|error handling|validation|strengthen|harden|optimize|improve|refactor)\b', combined_text)),
+            'new_component': bool(re.search(r'\bnew (component|service|module|feature|endpoint|integration|api)\b', combined_text)),
+        }
+
+        # Collect keyword matches for all task types
+        all_matches = {}
         for task_key, task_config in self.config['task_types'].items():
             keywords = task_config.get('keywords', [])
             exclude_keywords = task_config.get('exclude_keywords', [])
 
-            # Check if any keyword matches (using word boundaries)
             keyword_matches = []
             for keyword in keywords:
                 pattern = r'\b' + re.escape(keyword) + r'\b'
-                if re.search(pattern, title_lower) or re.search(pattern, desc_lower):
+                if re.search(pattern, combined_text):
                     keyword_matches.append(keyword)
 
-            # Check if any exclude keyword matches (using word boundaries)
             exclude_matches = []
             for exclude in exclude_keywords:
                 pattern = r'\b' + re.escape(exclude) + r'\b'
-                if re.search(pattern, title_lower) or re.search(pattern, desc_lower):
+                if re.search(pattern, combined_text):
                     exclude_matches.append(exclude)
 
-            # If we have keyword matches and no exclude matches, classify
             if keyword_matches and not exclude_matches:
-                reasons.append(f"Keywords found: {', '.join(keyword_matches)}")
-                return task_key, reasons
+                all_matches[task_key] = keyword_matches
+
+        # Characteristic-based classification with context awareness
+
+        # Priority 1: Refactor - if quality improvement indicators + existing code
+        if 'refactor' in all_matches or context_clues['quality_improvement']:
+            if context_clues['existing_code'] or context_clues['quality_improvement']:
+                reasons.append(f"Improving existing code quality/safety")
+                if 'refactor' in all_matches:
+                    reasons.append(f"Keywords: {', '.join(all_matches['refactor'])}")
+                if context_clues['existing_code']:
+                    reasons.append(f"Context: mentions existing/current code")
+                return 'refactor', reasons
+
+        # Priority 2: Bug Fix
+        if 'bug_fix' in all_matches:
+            reasons.append(f"Keywords found: {', '.join(all_matches['bug_fix'])}")
+            return 'bug_fix', reasons
+
+        # Priority 3: Spike
+        if 'spike' in all_matches:
+            reasons.append(f"Keywords found: {', '.join(all_matches['spike'])}")
+            return 'spike', reasons
+
+        # Priority 4: Net-New - only if truly new component without existing code reference
+        if 'net_new' in all_matches:
+            if context_clues['new_component'] or context_clues['from_scratch']:
+                if not context_clues['existing_code']:
+                    reasons.append(f"Building new component from scratch")
+                    reasons.append(f"Keywords: {', '.join(all_matches['net_new'])}")
+                    if context_clues['new_component']:
+                        reasons.append(f"Context: new component/service/module detected")
+                    return 'net_new', reasons
+
+            # "create"/"new" found but with existing code context -> likely enhancement or refactor
+            if context_clues['existing_code']:
+                reasons.append(f"Keywords '{', '.join(all_matches['net_new'])}' found, but working with existing code")
+                # Check if it's more like enhancement or refactor
+                if 'enhancement' in all_matches:
+                    reasons.append(f"Classified as Enhancement: extending existing functionality")
+                    return 'enhancement', reasons
+                else:
+                    reasons.append(f"Classified as Enhancement: context suggests extending existing code")
+                    return 'enhancement', reasons
+
+        # Priority 5: Enhancement - adding to existing code
+        if 'enhancement' in all_matches:
+            reasons.append(f"Keywords found: {', '.join(all_matches['enhancement'])}")
+            if context_clues['existing_code']:
+                reasons.append(f"Context: working with existing code")
+            return 'enhancement', reasons
 
         # Default to enhancement if uncertain
-        reasons.append("No specific keywords found, defaulting to enhancement")
+        reasons.append("No clear classification, defaulting to enhancement (conservative)")
         return 'enhancement', reasons
 
     def calculate_complexity_score(self,

@@ -186,49 +186,99 @@ Task types determine:
 
 ## Classification Logic
 
-### Step 1: Check Issue Type
+**IMPORTANT**: Classify based on **characteristics** first, using keywords only as supporting evidence. The nature of the work matters more than specific words used.
+
+### Step 1: Check Issue Type (Strongest Signal)
 
 ```
 if (issueType === "Bug") → classify as Bug Fix
 if (issueType === "Spike") → classify as Spike
 ```
 
-### Step 2: Check Keywords in Title and Description
+### Step 2: Analyze Characteristics (Primary Classification)
 
-Scan title and description (case-insensitive) for keywords:
+Look for these indicators in title and description:
+
+#### Net-New Feature Indicators
+- **Creating new files/components from scratch**
+  - Signals: "new [component/service/module]", "build from scratch", "first [integration/implementation]"
+  - Context: No existing code mentioned, no reference to current implementation
+  - Examples: "new API endpoint", "build Stripe integration", "first GraphQL service"
+
+#### Refactor/Hardening Indicators
+- **Improving existing code WITHOUT changing behavior**
+  - Signals: "existing", "current", "strengthen", "improve [existing thing]", "optimize", "type safety", "error handling"
+  - Context: Mentions what already exists, focuses on quality/performance/safety
+  - Examples: "strengthen existing validation", "improve current query patterns", "add type guards to existing functions"
+  - **Key**: If "create" or "add" appears WITH "existing/current" → likely Refactor, not Net-New
+
+#### Enhancement Indicators
+- **Adding new capabilities to existing components**
+  - Signals: "add [feature] to existing", "extend current", "support additional", references to existing code
+  - Context: Building on top of what exists, following established patterns
+  - Examples: "add pagination to existing search", "extend user profile", "support CSV export in reports"
+
+#### Bug Fix Indicators
+- **Fixing known problems**
+  - Signals: "fix", "broken", "not working", "error", "incorrect behavior"
+  - Context: Problem is defined, location is known
+  - Examples: "fix validation error", "correct calculation", "resolve null pointer"
+
+#### Spike Indicators
+- **Research and exploration**
+  - Signals: "investigate", "research", "explore", "evaluate", "prototype", "poc"
+  - Context: Uncertain outcome, learning-focused
+  - Examples: "investigate API behavior", "research performance", "evaluate GraphQL vs REST"
+
+### Step 3: Keyword Check (Secondary Support)
+
+Use keywords to **support** the characteristic analysis, not replace it:
 
 ```
-// Bug Fix
-if (matches: fix, bug, defect, issue, broken, error) → Bug Fix
+// Refactor-strong keywords (high confidence)
+if (matches: refactor, optimize, harden, strengthen, type safety, error handling)
+  AND (mentions: existing, current, improve)
+  → Refactor
 
-// Refactor
-if (matches: refactor, improve, optimize, harden, strengthen, type, validate) → Refactor
+// Bug Fix keywords
+if (matches: fix, bug, broken, error, defect, incorrect)
+  → Bug Fix
 
-// Enhancement
-if (matches: add, extend, enhance, support) AND NOT matches: new → Enhancement
+// Spike keywords
+if (matches: spike, investigate, research, explore, poc, prototype)
+  → Spike
 
-// Net-New
-if (matches: new, create, build, implement) → Net-New
+// Enhancement keywords
+if (matches: add, extend, enhance, support)
+  AND (mentions: existing, current)
+  AND NOT (mentions: new component/service/module from scratch)
+  → Enhancement
 
-// Spike
-if (matches: spike, investigate, research, explore, poc, prototype) → Spike
+// Net-New keywords (only if no existing code mentioned)
+if (matches: new, create, build, implement)
+  AND NOT (mentions: existing, current, improve)
+  → Net-New
+
+// Ambiguous case: "create" with existing code context
+if (matches: create) AND (mentions: existing, current)
+  → Likely Refactor or Enhancement, not Net-New
 ```
 
-### Step 3: Default
+### Step 4: Default
 
 ```
-if (no keywords matched) → Enhancement (conservative default)
+if (no clear classification) → Enhancement (conservative default)
 ```
 
 ### Manual Override
 
-Allow manual override with `--task-type` flag:
+Allow manual override with `--task-type-override` flag:
 ```
---task-type=refactor
---task-type=bug-fix
---task-type=enhancement
---task-type=net-new
---task-type=spike
+--task-type-override=refactor
+--task-type-override=bug-fix
+--task-type-override=enhancement
+--task-type-override=net-new
+--task-type-override=spike
 ```
 
 ---
@@ -270,7 +320,52 @@ vs.
 
 ---
 
-### Example 4: Spike
+### Example 4: "Create" in Refactoring Context
+
+**Title**: "Create type guards for existing validation functions"
+**Keywords Found**: "create", "type", "existing", "validation"
+**Classification**: **Refactor** ✓
+**Rationale**:
+- **Characteristic Analysis**: Mentions "existing" functions → improving existing code
+- **Context**: Type guards = improving type safety, not adding new functionality
+- **Keyword Priority**: "existing" + "type" (refactor signals) override "create" (net-new signal)
+
+vs.
+
+**Title**: "Create new validation service from scratch"
+**Keywords Found**: "create", "new", "validation", "scratch"
+**Classification**: **Net-New** ✓
+**Rationale**:
+- **Characteristic Analysis**: "new service" + "from scratch" → building something that doesn't exist
+- **Context**: No reference to existing code
+- **Keyword Priority**: "new" + "from scratch" clearly indicate net-new work
+
+---
+
+### Example 5: "Add" in Different Contexts
+
+**Title**: "Add error handling to existing API endpoints"
+**Keywords Found**: "add", "existing", "error handling"
+**Classification**: **Refactor** ✓
+**Rationale**: Adding error handling = improving existing code quality, not new functionality
+
+vs.
+
+**Title**: "Add new PDF export feature to reports"
+**Keywords Found**: "add", "new", "feature"
+**Classification**: **Net-New** ✓
+**Rationale**: "new feature" = building something that doesn't exist yet
+
+vs.
+
+**Title**: "Add pagination to existing search results"
+**Keywords Found**: "add", "existing", "search"
+**Classification**: **Enhancement** ✓
+**Rationale**: Adding capability (pagination) to existing component (search)
+
+---
+
+### Example 6: Spike
 
 **Title**: "Investigate performance bottleneck in data processing"
 **Keywords Found**: "investigate"
@@ -296,9 +391,31 @@ Same raw complexity, different task types:
 
 ## Best Practices
 
-1. **Start with issue type** - it's the strongest signal
-2. **Look for multiple keywords** - more matches = higher confidence
-3. **Consider context** - "add type safety" is refactoring, not enhancement
-4. **When in doubt, ask** - use manual override if classification is unclear
-5. **Document rationale** - explain why this task type was chosen
-6. **Validate with team** - classification affects estimates significantly
+1. **Start with issue type** - it's the strongest signal (Bug, Spike types are usually correct)
+
+2. **Analyze characteristics first, keywords second**
+   - Ask: "Does this code/component already exist?"
+   - Ask: "Is this adding new functionality or improving existing quality?"
+   - Ask: "Is behavior changing or staying the same?"
+
+3. **Look for context clues**
+   - "existing", "current" → likely Refactor or Enhancement, not Net-New
+   - "new [component/service]", "from scratch" → likely Net-New
+   - "to existing [thing]" → likely Enhancement or Refactor
+
+4. **Keyword conflicts require context**
+   - "create" + "existing" → probably Refactor
+   - "create" + "new" → probably Net-New
+   - "add" + "error handling" → probably Refactor
+   - "add" + "new feature" → probably Net-New or Enhancement
+
+5. **Consider the nature of work**
+   - Type safety, validation, error handling → Refactor
+   - New capabilities to existing components → Enhancement
+   - Brand new components from scratch → Net-New
+
+6. **When in doubt, ask** - use manual override if classification is unclear
+
+7. **Document rationale** - explain why this task type was chosen, especially for ambiguous cases
+
+8. **Validate with team** - classification affects estimates significantly (26 min vs 150 min for same complexity!)
