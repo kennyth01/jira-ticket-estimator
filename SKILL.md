@@ -5,7 +5,7 @@ description: This skill should be used when estimating development time for Jira
 
 # Jira Ticket Estimator
 
-Estimate manual and AI-assisted development time for Jira tickets using a 7-phase manual workflow and 7-phase AI-assisted workflow that mirror real development processes.
+Estimate manual and AI-assisted development time for Jira tickets using an 8-phase manual workflow and 8-phase AI-assisted workflow that mirror real development processes.
 
 ## When to Use This Skill
 
@@ -211,6 +211,7 @@ Format output as markdown table:
 | 5. Code Review & Revisions | X min | <description> |
 | 6. Deployment to Test | X min | Deploy to test environment |
 | 7. Verification | X min | Smoke tests, verification (scales with complexity) |
+| 8. Feedback & Iterations | X min | Incorporate stakeholder feedback, iterate on changes |
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
@@ -225,6 +226,7 @@ Format output as markdown table:
 | 5. Iterations & Vibe Coding | X min | Fix AI mistakes, refine prompts |
 | 6. Deploy to Test | X min | Deploy to test environment |
 | 7. Test Verification | X min | Smoke tests, E2E verification |
+| 8. Feedback & Iterations | X min | Incorporate stakeholder feedback, iterate on AI-generated changes |
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
@@ -311,33 +313,38 @@ Five project types with customized workflow phases:
 - Testing: 40% of implementation
 - Deployment to Test: 25 min (50 min with infra)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Serverless (AWS Lambda, Cloud Functions)
 - Planning: 120 min @ complexity 5 (more for IaC)
 - Testing: 35% of implementation
 - Deployment to Test: 25 min (60 min with infra)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Frontend (React, Vue, Angular)
 - Planning: 75 min @ complexity 5
 - Testing: 45% of implementation (includes E2E)
 - Deployment to Test: 25 min (35 min with infra)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Full-Stack (Backend + Frontend)
 - Planning: 120 min @ complexity 5
 - Testing: 50% of implementation (most comprehensive)
 - Deployment to Test: 25 min (60 min with infra)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Mobile (Android, iOS, React Native, Flutter)
 - Planning: 100 min @ complexity 5 (screen flows, offline support)
 - Testing: 50% of implementation (device testing critical)
 - Deployment to Test: 25 min (40 min with infra) - TestFlight/Internal Testing
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Test Automation (Serenity BDD, Playwright, Cypress)
-- **Custom 7-Phase Workflow**: Analysis & Test Planning → Environment Setup → Page Objects & Locators → Step Implementations → Gherkin Integration → Testing & Evidence → Documentation
+- **Custom 8-Phase Workflow**: Analysis & Test Planning → Environment Setup → Page Objects & Locators → Step Implementations → Gherkin Integration → Testing & Evidence → Documentation → Feedback & Iterations
 - Phase 1 - Analysis & Test Planning: 145 min @ complexity 5
 - Phase 2 - Environment Setup: 63 min @ complexity 5
 - Phase 3 - Page Objects & Locators: 199 min @ complexity 5
@@ -345,12 +352,13 @@ Five project types with customized workflow phases:
 - Phase 5 - Gherkin Integration: 136 min @ complexity 5
 - Phase 6 - Testing & Evidence: 72 min @ complexity 5
 - Phase 7 - Documentation: 54 min @ complexity 5
+- Phase 8 - Feedback & Iterations: 35 min @ complexity 5 (scales with complexity)
 - **AI-Assisted**: 45% time savings across all phases
 - **Common Overhead**: Regression Assurance (+45 min)
 
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
-## The 7-Phase Manual Workflow
+## The 8-Phase Manual Workflow
 
 Estimates follow real development phases:
 
@@ -361,8 +369,9 @@ Estimates follow real development phases:
 5. **Code Review & Revisions** - Peer review, addressing feedback
 6. **Deployment to Test** - Deploy to test environment (fixed time, infra-aware)
 7. **Verification** - Smoke tests, verification (scales with complexity)
+8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification
 
-## The 7-Phase AI-Assisted Workflow
+## The 8-Phase AI-Assisted Workflow
 
 AI-assisted development follows these phases:
 
@@ -373,6 +382,7 @@ AI-assisted development follows these phases:
 5. **Iterations & Vibe Coding** - Fix AI mistakes, regenerate code, refine prompts
 6. **Deploy to Test** - Deploy to test environment
 7. **Test Verification** - Smoke tests, E2E verification, validation
+8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification
 
 Typical time savings: 40-50% compared to manual development.
 

@@ -371,9 +371,14 @@ class TicketEstimator:
             documentation_base = phases['documentation']['base_minutes_at_complexity_5']
             documentation_time = documentation_base * scale_factor
 
+            # Phase 8: Feedback & Iterations (scales with complexity)
+            feedback_iterations_base = phases['feedback_iterations']['base_minutes_at_complexity_5']
+            feedback_iterations_time = feedback_iterations_base * scale_factor
+
             # Total
             total_minutes = (test_planning_time + environment_setup_time + page_objects_time +
-                            implementation_time + gherkin_integration_time + testing_time + documentation_time)
+                            implementation_time + gherkin_integration_time + testing_time + documentation_time +
+                            feedback_iterations_time)
 
             return {
                 'test_planning': round(test_planning_time, 1),
@@ -383,6 +388,7 @@ class TicketEstimator:
                 'gherkin_integration': round(gherkin_integration_time, 1),
                 'testing': round(testing_time, 1),
                 'documentation': round(documentation_time, 1),
+                'feedback_iterations': round(feedback_iterations_time, 1),
                 'total_minutes': round(total_minutes, 1),
                 'total_hours': round(total_minutes / 60.0, 2),
                 'phases': {
@@ -428,6 +434,12 @@ class TicketEstimator:
                         'description': phases['documentation']['description'],
                         'time_minutes': round(documentation_time, 1),
                         'scales_with_complexity': True
+                    },
+                    '8_feedback_iterations': {
+                        'label': phases['feedback_iterations']['label'],
+                        'description': phases['feedback_iterations']['description'],
+                        'time_minutes': round(feedback_iterations_time, 1),
+                        'scales_with_complexity': True
                     }
                 }
             }
@@ -467,9 +479,14 @@ class TicketEstimator:
         verification_base = phases['verification']['base_minutes_at_complexity_5']
         verification_time = verification_base * scale_factor
 
+        # Phase 8: Feedback & Iterations (scales with complexity)
+        feedback_iterations_base = phases['feedback_iterations']['base_minutes_at_complexity_5']
+        feedback_iterations_time = feedback_iterations_base * scale_factor
+
         # Total
         total_minutes = (planning_time + implementation_time + self_review_time +
-                        testing_time + code_review_time + deploy_time + verification_time)
+                        testing_time + code_review_time + deploy_time + verification_time +
+                        feedback_iterations_time)
 
         return {
             'planning_design': round(planning_time, 1),
@@ -479,6 +496,7 @@ class TicketEstimator:
             'code_review': round(code_review_time, 1),
             'deployment_to_test': round(deploy_time, 1),
             'verification': round(verification_time, 1),
+            'feedback_iterations': round(feedback_iterations_time, 1),
             'total_minutes': round(total_minutes, 1),
             'total_hours': round(total_minutes / 60.0, 2),
             'phases': {
@@ -524,6 +542,12 @@ class TicketEstimator:
                     'label': phases['verification']['label'],
                     'description': phases['verification']['description'],
                     'time_minutes': round(verification_time, 1),
+                    'scales_with_complexity': True
+                },
+                '8_feedback_iterations': {
+                    'label': phases['feedback_iterations']['label'],
+                    'description': phases['feedback_iterations']['description'],
+                    'time_minutes': round(feedback_iterations_time, 1),
                     'scales_with_complexity': True
                 }
             }
@@ -600,9 +624,15 @@ class TicketEstimator:
             savings_pct = ai_documentation_config['time_savings_percentage'] / 100.0
             ai_documentation_time = manual_workflow['documentation'] * (1 - savings_pct)
 
+            # Phase 8: Feedback & Iterations (scales with complexity)
+            feedback_iterations_config = ai_phases['feedback_iterations']
+            feedback_iterations_base = feedback_iterations_config['base_minutes_at_complexity_5']
+            feedback_iterations_time = feedback_iterations_base * scale_factor
+
             # Total
             total_minutes = (ai_test_planning_time + ai_environment_time + ai_page_objects_time +
-                            ai_implementation_time + ai_gherkin_time + ai_testing_time + ai_documentation_time)
+                            ai_implementation_time + ai_gherkin_time + ai_testing_time + ai_documentation_time +
+                            feedback_iterations_time)
 
             return {
                 'ai_test_planning': round(ai_test_planning_time, 1),
@@ -612,6 +642,7 @@ class TicketEstimator:
                 'ai_gherkin': round(ai_gherkin_time, 1),
                 'ai_testing': round(ai_testing_time, 1),
                 'ai_documentation': round(ai_documentation_time, 1),
+                'feedback_iterations': round(feedback_iterations_time, 1),
                 'total_minutes': round(total_minutes, 1),
                 'total_hours': round(total_minutes / 60.0, 2),
                 'phases': {
@@ -656,6 +687,12 @@ class TicketEstimator:
                         'description': ai_phases['ai_documentation']['description'],
                         'time_minutes': round(ai_documentation_time, 1),
                         'time_savings_percentage': ai_phases['ai_documentation']['time_savings_percentage']
+                    },
+                    '8_feedback_iterations': {
+                        'label': ai_phases['feedback_iterations']['label'],
+                        'description': ai_phases['feedback_iterations']['description'],
+                        'time_minutes': round(feedback_iterations_time, 1),
+                        'scales_with_complexity': True
                     }
                 }
             }
@@ -696,9 +733,15 @@ class TicketEstimator:
         else:
             verification_time = verification_config['base_minutes']
 
+        # Phase 8: Feedback & Iterations (scales with complexity)
+        feedback_iterations_config = ai_phases['feedback_iterations']
+        feedback_iterations_base = feedback_iterations_config['base_minutes_at_complexity_5']
+        feedback_iterations_time = feedback_iterations_base * scale_factor
+
         # Total
         total_minutes = (ai_planning_time + ai_implementation_time + ai_review_time +
-                        human_review_testing_time + iterations_time + deploy_time + verification_time)
+                        human_review_testing_time + iterations_time + deploy_time + verification_time +
+                        feedback_iterations_time)
 
         return {
             'ai_planning': round(ai_planning_time, 1),
@@ -708,6 +751,7 @@ class TicketEstimator:
             'iterations': round(iterations_time, 1),
             'deploy_test': round(deploy_time, 1),
             'test_verification': round(verification_time, 1),
+            'feedback_iterations': round(feedback_iterations_time, 1),
             'total_minutes': round(total_minutes, 1),
             'total_hours': round(total_minutes / 60.0, 2),
             'phases': {
@@ -749,6 +793,12 @@ class TicketEstimator:
                     'description': ai_phases['test_verification']['description'],
                     'time_minutes': round(verification_time, 1),
                     'infrastructure_changes': has_infrastructure_changes
+                },
+                '8_feedback_iterations': {
+                    'label': ai_phases['feedback_iterations']['label'],
+                    'description': ai_phases['feedback_iterations']['description'],
+                    'time_minutes': round(feedback_iterations_time, 1),
+                    'scales_with_complexity': True
                 }
             }
         }

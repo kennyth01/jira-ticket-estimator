@@ -5,8 +5,8 @@ A Claude Code skill for estimating manual and AI-assisted development time for J
 ## Features
 
 - **Dual Workflow Estimation**: Get both manual and AI-assisted development time estimates
-- **7-Phase Manual Workflow**: Planning & Design → Implementation → Self Review → Testing → Code Review & Revisions → Deployment to Test → Verification
-- **7-Phase AI-Assisted Workflow**: AI Planning → AI Implementation → AI Review → Human Review & Testing → Iterations & Vibe Coding → Deploy to Test → Test Verification
+- **8-Phase Manual Workflow**: Planning & Design → Implementation → Self Review → Testing → Code Review & Revisions → Deployment to Test → Verification → Feedback & Iterations
+- **8-Phase AI-Assisted Workflow**: AI Planning → AI Implementation → AI Review → Human Review & Testing → Iterations & Vibe Coding → Deploy to Test → Test Verification → Feedback & Iterations
 - **6 Project Types**: Monolithic, Serverless, Frontend, Full-Stack, Mobile (iOS/Android/React Native/Flutter), Test Automation (Serenity BDD/Playwright/Cypress)
 - **Automatic Task Classification**: Net-New, Enhancement, Refactor, Bug Fix, Spike
 - **Complexity-Based Scaling**: Implementation time scales with adjusted complexity scores
@@ -135,6 +135,7 @@ Project type: mobile
 - Testing: 40% of implementation time
 - Deployment to Test: 25 min (50 min with infrastructure changes)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Serverless (AWS Lambda, Cloud Functions)
 - Best for: Event-driven architectures with cloud functions
@@ -142,6 +143,7 @@ Project type: mobile
 - Testing: 35% of implementation time
 - Deployment to Test: 25 min (60 min with infrastructure changes)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Frontend (React, Vue, Angular)
 - Best for: Single-page applications and UI components
@@ -149,6 +151,7 @@ Project type: mobile
 - Testing: 45% of implementation time (includes E2E)
 - Deployment to Test: 25 min (35 min with infrastructure changes)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Full-Stack (Backend + Frontend)
 - Best for: Features spanning both backend and frontend
@@ -156,6 +159,7 @@ Project type: mobile
 - Testing: 50% of implementation time (most comprehensive)
 - Deployment to Test: 25 min (60 min with infrastructure changes)
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Mobile (iOS, Android, React Native, Flutter)
 - Best for: Native and cross-platform mobile applications
@@ -163,10 +167,11 @@ Project type: mobile
 - Testing: 50% of implementation time (device testing critical)
 - Deployment to Test: 25 min (40 min with infrastructure changes) - TestFlight/Internal Testing
 - Verification: 20 min @ complexity 5 (scales with complexity)
+- Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Test Automation (Serenity BDD, Playwright, Cypress)
 - Best for: Test automation development, QA automation, E2E test suites
-- **Custom 7-Phase Workflow**: Analysis & Test Planning → Environment & Framework Setup → Page Objects & Locators → Step Implementations & Business Logic → Step Definitions & Gherkin Integration → Testing & Evidence Collection → Integration & Documentation
+- **Custom 8-Phase Workflow**: Analysis & Test Planning → Environment & Framework Setup → Page Objects & Locators → Step Implementations & Business Logic → Step Definitions & Gherkin Integration → Testing & Evidence Collection → Integration & Documentation → Feedback & Iterations
 - Phase 1 - Analysis & Test Planning: 145 min @ complexity 5 (test scenario design, flow coverage planning)
 - Phase 2 - Environment Setup: 63 min @ complexity 5 (test environment config, framework dependencies)
 - Phase 3 - Page Objects & Locators: 199 min @ complexity 5 (locator identification, element mappings)
@@ -174,6 +179,7 @@ Project type: mobile
 - Phase 5 - Gherkin Integration: 136 min @ complexity 5 (wire steps to implementations)
 - Phase 6 - Testing & Evidence: 72 min @ complexity 5 (test execution, screenshot capture)
 - Phase 7 - Documentation: 54 min @ complexity 5 (CI/CD integration, reporting)
+- Phase 8 - Feedback & Iterations: 35 min @ complexity 5 (QA feedback, test scenario refinements)
 - **AI-Assisted**: 45% time savings (AI generates page objects, steps, Gherkin wiring)
 - **Common Overhead**: Regression Assurance (+45 min) for validation across multiple flows
 
@@ -255,7 +261,8 @@ See `references/task-type-classification.md` for complete classification guide.
 | 5. Iterations & Vibe Coding | 23 min | Fix AI mistakes, refine prompts |
 | 6. Deploy to Test | 60 min | Deploy to test environment |
 | 7. Test Verification | 20 min | Smoke tests, E2E verification |
-| **Total (calculated)** | **4.88h** | |
+| 8. Feedback & Iterations | 19 min | Incorporate stakeholder feedback |
+| **Total (calculated)** | **5.20h** | |
 | **Total (rounded)** | **6h** | Snapped to bucket |
 
 ## Overhead Activities
@@ -659,6 +666,7 @@ AI-assisted development typically provides 40-50% time savings:
 | Code Review | 100% | Iterations (20-35min) | 60-80% faster |
 | Deploy | 100% | 100% (same time) | 0% |
 | Verification | 100% | ~50% (faster smoke tests) | ~50% faster |
+| Feedback & Iterations | 100% | ~65% (faster iterations with AI) | ~35% faster |
 | **Overhead Activities** | **100%** | **100% (same time)** | **0%** |
 | **Manual Time Adjustments** | **100%** | **100% (same time)** | **0%** |
 | **File Touch Overhead** | **100%** | **0% (not needed)** | **100% saved** |

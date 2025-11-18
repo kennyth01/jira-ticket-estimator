@@ -58,6 +58,14 @@
             "min_minutes": 10,
             "max_minutes": 60,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -107,6 +115,14 @@
             "base_minutes": 20,
             "infrastructure_changes_minutes": 30,
             "scales_with_complexity": false
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         }
       },
@@ -164,6 +180,14 @@
             "min_minutes": 10,
             "max_minutes": 60,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -213,6 +237,14 @@
             "base_minutes": 25,
             "infrastructure_changes_minutes": 45,
             "scales_with_complexity": false
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 90,
+            "scales_with_complexity": true
           }
         }
       },
@@ -270,6 +302,14 @@
             "min_minutes": 10,
             "max_minutes": 60,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -319,6 +359,14 @@
             "base_minutes": 15,
             "infrastructure_changes_minutes": 25,
             "scales_with_complexity": false
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         }
       },
@@ -376,6 +424,14 @@
             "min_minutes": 10,
             "max_minutes": 60,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -425,6 +481,14 @@
             "base_minutes": 25,
             "infrastructure_changes_minutes": 45,
             "scales_with_complexity": false
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         }
       },
@@ -482,6 +546,14 @@
             "min_minutes": 10,
             "max_minutes": 60,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "base_minutes_at_complexity_5": 30,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -531,6 +603,14 @@
             "base_minutes": 25,
             "infrastructure_changes_minutes": 35,
             "scales_with_complexity": false
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "base_minutes_at_complexity_5": 20,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         }
       },
@@ -592,6 +672,14 @@
             "min_minutes": 15,
             "max_minutes": 120,
             "scales_with_complexity": true
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate QA feedback, iterate on test scenarios, address edge cases found during execution",
+            "base_minutes_at_complexity_5": 35,
+            "min_minutes": 15,
+            "max_minutes": 180,
+            "scales_with_complexity": true
           }
         },
         "ai_assisted_workflow": {
@@ -636,6 +724,14 @@
             "description": "AI generates CI/CD configs, test documentation, reports",
             "time_savings_percentage": 46,
             "base_on_manual_phase": "documentation"
+          },
+          "feedback_iterations": {
+            "label": "Feedback & Iterations",
+            "description": "Incorporate QA feedback, iterate on AI-generated tests, refine test scenarios based on execution",
+            "base_minutes_at_complexity_5": 25,
+            "min_minutes": 10,
+            "max_minutes": 60,
+            "scales_with_complexity": true
           }
         }
       }
