@@ -178,43 +178,13 @@ verificationTime = projectType.verification.base_minutes_at_complexity_5 × scal
 verificationTime = 20 × (3.5 / 5) = 20 × 0.7 = 14 minutes
 ```
 
-## Phase 8: Feedback & Iterations
-
-**Scales with complexity**
-
-```
-feedbackIterationsTime = projectType.feedback_iterations.base_minutes_at_complexity_5 × scaleFactor
-```
-
-**Base times by project type** (at complexity 5, scaleFactor = 1.0):
-
-| Project Type | Base Minutes | Range (complexity 1-10) | Details |
-|--------------|--------------|-------------------------|---------|
-| Monolithic | 30 min | 6-60 min | Incorporate stakeholder feedback, iterate on changes |
-| Serverless | 30 min | 6-60 min | Address feedback, refine infrastructure changes |
-| Frontend | 30 min | 6-60 min | UI/UX feedback, visual adjustments |
-| Full-Stack | 30 min | 6-60 min | Backend + frontend feedback iterations |
-| Mobile | 30 min | 6-60 min | Device-specific feedback, UI refinements |
-| Test Automation | 35 min | 7-70 min | QA feedback, test scenario refinements |
-
-**Example**: Monolithic with complexity 4.2
-```
-feedbackIterationsTime = 30 × (4.2 / 5) = 30 × 0.84 = 25.2 minutes
-```
-
-**Example**: Test Automation with complexity 7.3
-```
-feedbackIterationsTime = 35 × (7.3 / 5) = 35 × 1.46 = 51.1 minutes
-```
-
 ## Total Time Calculation
 
 ### Base Workflow Time
 
 ```
 workflowTime = planningTime + implementationTime + selfReviewTime +
-               testingTime + codeReviewTime + deployTime + verificationTime +
-               feedbackIterationsTime
+               testingTime + codeReviewTime + deployTime + verificationTime
 ```
 
 ### Overhead Activities (Optional)
@@ -402,15 +372,12 @@ Deployment to Test:
 Verification:
   20 × 0.252 = 5.04 minutes
 
-Feedback & Iterations:
-  30 × 0.252 = 7.56 minutes
-
 Total:
-  22.68 + 15.75 + 30 + 6.3 + 11.34 + 25 + 5.04 + 7.56 = 123.67 minutes = 2.06 hours
+  22.68 + 15.75 + 30 + 6.3 + 11.34 + 25 + 5.04 = 116.11 minutes = 1.94 hours
 
 Bucket Rounding:
-  2.06h → current bucket = 2h, threshold = 2.63h
-  2.06 < 2.63 → stays at 2h
+  1.94h → current bucket = 1h, threshold = 1.25h
+  1.94 > 1.25 → rounds to 2h
 
 Final Estimate: 2 hours
 ```
@@ -449,17 +416,14 @@ Deployment to Test:
 Verification:
   20 × 1.276 = 25.52 minutes
 
-Feedback & Iterations:
-  30 × 1.276 = 38.28 minutes
-
 Total:
-  153.12 + 143.55 + 30 + 71.78 + 76.56 + 60 + 25.52 + 38.28 = 598.81 minutes = 9.98 hours
+  153.12 + 143.55 + 30 + 71.78 + 76.56 + 60 + 25.52 = 560.53 minutes = 9.34 hours
 
 Bucket Rounding:
-  9.98h → current bucket = 8h, threshold = 10.0h
-  9.98 < 10.0 → stays at 8h
+  9.34h → current bucket = 8h, threshold = 9.0h
+  9.34 > 9.0 → rounds to 12h
 
-Final Estimate: 8 hours (1 day)
+Final Estimate: 12 hours (1.5 days)
 ```
 
 ## Complete Example with Overhead and Manual Adjustments
@@ -498,11 +462,8 @@ Deployment to Test:
 Verification:
   20 × 1.4 = 28 minutes
 
-Feedback & Iterations:
-  30 × 1.4 = 42 minutes
-
 Workflow Total:
-  126 + 210 + 30 + 84 + 63 + 25 + 28 + 42 = 608 minutes = 10.13 hours
+  126 + 210 + 30 + 84 + 63 + 25 + 28 = 566 minutes = 9.43 hours
 ```
 
 **Overhead Activities Detected**:
@@ -525,12 +486,12 @@ Manual Adjustment Total: 2 hours
 **Final Calculation**:
 
 ```
-Total Time = 10.13h (workflow) + 0.33h (overhead) + 2.0h (adjustments)
-Total Time = 12.46 hours
+Total Time = 9.43h (workflow) + 0.33h (overhead) + 2.0h (adjustments)
+Total Time = 11.76 hours
 
 Bucket Rounding:
-  12.46h → current bucket = 12h, threshold = 14.0h
-  12.46 < 14.0 → stays at 12h
+  11.76h → current bucket = 12h, threshold = 13.0h
+  11.76 < 13.0 → stays at 12h
 
 Final Estimate: 12 hours (1.5 days)
 ```
@@ -539,12 +500,12 @@ Final Estimate: 12 hours (1.5 days)
 
 ```
 Manual Development Time: 12h
-  - Workflow: 10.13h
+  - Workflow: 9.43h
   - Overhead: 0.33h (Database Change Management)
   - Manual Adjustments: 2h (manual security testing)
 
 AI-Assisted Development Time: ~8h
-  - Workflow: 5.5h (estimated 46% savings on workflow)
+  - Workflow: 5.1h (estimated 46% savings on workflow)
   - Overhead: 0.33h (same - cannot be accelerated)
   - Manual Adjustments: 2h (same - cannot be accelerated)
 ```
@@ -555,7 +516,7 @@ This example demonstrates how overhead activities and manual time adjustments co
 
 ## Test Automation Project Type
 
-Test automation projects (Serenity BDD, Playwright, Cypress) have a specialized 8-phase workflow that differs from traditional development:
+Test automation projects (Serenity BDD, Playwright, Cypress) have a specialized 7-phase workflow that differs from traditional development:
 
 ### Phase 1: Analysis & Test Planning
 ```
@@ -605,28 +566,20 @@ documentationTime = 54 × scaleFactor
 **Range**: 11-108 minutes (complexity 1-10)
 **Description**: CI/CD integration, test documentation, reporting setup
 
-### Phase 8: Feedback & Iterations
-```
-feedbackIterationsTime = 35 × scaleFactor
-```
-**Range**: 7-70 minutes (complexity 1-10)
-**Description**: Incorporate QA feedback, iterate on test scenarios, address edge cases found during execution
-
 ### Typical Breakdown
 
 For a complexity 7.3 test automation ticket:
 
-**Manual Workflow** (23 hours base):
-- Analysis & Test Planning: 3.5h (15%)
+**Manual Workflow** (22 hours base):
+- Analysis & Test Planning: 3.5h (16%)
 - Environment Setup: 1.5h (7%)
-- Page Objects & Locators: 4.8h (21%)
-- Step Implementations: 5.7h (25%)
-- Gherkin Integration: 3.3h (14%)
+- Page Objects & Locators: 4.8h (22%)
+- Step Implementations: 5.7h (26%)
+- Gherkin Integration: 3.3h (15%)
 - Testing & Evidence: 1.8h (8%)
 - Documentation: 1.3h (6%)
-- Feedback & Iterations: 0.9h (4%)
 
-**AI-Assisted Workflow** (12.5 hours):
+**AI-Assisted Workflow** (12 hours):
 - 45% time savings across all phases
 - AI generates page objects, step implementations, Gherkin wiring
 - Human validates test execution and evidence collection

@@ -61,10 +61,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -118,10 +118,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "description": "Address feedback, refine AI output, adjust implementation",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 60,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }
@@ -183,10 +183,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -240,10 +240,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "description": "Address feedback, refine AI output, adjust implementation",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 90,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }
@@ -305,10 +305,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -362,10 +362,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "description": "Address feedback, refine AI output, adjust implementation",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 60,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }
@@ -427,10 +427,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -484,10 +484,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "description": "Address feedback, refine AI output, adjust implementation",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 60,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }
@@ -549,10 +549,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification",
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
             "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -606,10 +606,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification",
+            "description": "Address feedback, refine AI output, adjust implementation",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 60,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }
@@ -675,10 +675,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate QA feedback, iterate on test scenarios, address edge cases found during execution",
-            "base_minutes_at_complexity_5": 35,
+            "description": "Address feedback from QA, stakeholders, and iterative refinements",
+            "base_minutes_at_complexity_5": 30,
             "min_minutes": 15,
-            "max_minutes": 180,
+            "max_minutes": 120,
             "scales_with_complexity": true
           }
         },
@@ -727,10 +727,10 @@
           },
           "feedback_iterations": {
             "label": "Feedback & Iterations",
-            "description": "Incorporate QA feedback, iterate on AI-generated tests, refine test scenarios based on execution",
-            "base_minutes_at_complexity_5": 25,
+            "description": "Address feedback, refine AI output, adjust implementation",
+            "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
-            "max_minutes": 60,
+            "max_minutes": 80,
             "scales_with_complexity": true
           }
         }

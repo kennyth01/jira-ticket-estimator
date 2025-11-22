@@ -189,6 +189,28 @@ Extract from JSON output:
 
 ### 8. Present Estimate to User
 
+#### Formatting Rules for Display
+
+Convert `total_hours_rounded` (bucket value) to days/hours format:
+
+**Day size**: 1 day = 8 hours (configured in heuristics.json)
+
+**Conversion formula**:
+- `days = total_hours_rounded ÷ 8` (integer division)
+- `remaining_hours = total_hours_rounded % 8` (modulo)
+
+**Display format**:
+- If `total_hours_rounded < 8`: Show as "Xh" (e.g., "4h", "6h")
+- If `remaining_hours = 0`: Show as "Xd" (e.g., "2d" for 16h, "4d" for 32h)
+- If `remaining_hours > 0`: Show as "Xd Xh" (e.g., "2d 4h" for 20h, "3d 6h" for 30h)
+
+**Examples**:
+- 32h bucket → 32 ÷ 8 = 4d (remainder 0) → **"4d (32.84h)"**
+- 30h bucket → 30 ÷ 8 = 3d remainder 6h → **"3d 6h (30.17h)"**
+- 6h bucket → **"6h (5.89h)"**
+- 16h bucket → 16 ÷ 8 = 2d (remainder 0) → **"2d (16.51h)"**
+- 20h bucket → 20 ÷ 8 = 2d remainder 4h → **"2d 4h (19.23h)"**
+
 Format output as markdown table:
 
 ```markdown
@@ -199,6 +221,12 @@ Format output as markdown table:
 **T-Shirt Size**: <size>
 **Story Points**: <points>
 **Complexity**: <raw>/10 → <adjusted>/10 (scale factor: <sf>)
+**Files Affected**: <files count>
+**Manual Development Total**: Xd Xh (or Xh if < 8h)
+- Breakdown: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+**AI-Assisted Development Total**: Xd Xh (or Xh if < 8h)
+- Breakdown: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+**Time Savings**: XX.X%
 
 ## Manual Development Time Breakdown
 
@@ -258,12 +286,6 @@ Format output as markdown table:
 | **Total Adjustments** | **+X.XXh** | |
 
 *If no manual adjustments detected: Skip this section*
-
-## Time Savings
-
-- **Manual Development**: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
-- **AI-Assisted Development**: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
-- **Time Savings**: X.XXh (XX.X% faster)
 
 *Note: Overhead time and manual adjustments are the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
 

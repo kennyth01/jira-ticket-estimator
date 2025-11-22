@@ -975,7 +975,8 @@ class TicketEstimator:
 
         # Classify task type
         if task_type_override:
-            task_type = task_type_override
+            # Normalize task type: convert hyphens to underscores for consistency
+            task_type = task_type_override.replace('-', '_')
             task_type_reasons = [f"Manual override to '{task_type}'"]
         else:
             task_type, task_type_reasons = self.classify_task_type(title, description, issue_type)
