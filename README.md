@@ -278,7 +278,7 @@ See `references/task-type-classification.md` for complete classification guide.
 
 - Manual Development: 8.22h (workflow) + 0h (overhead) + 0h (adjustments) = 8.22h → 8h rounded
 - AI-Assisted Development: 4.88h (workflow) + 0h (overhead) + 0h (adjustments) = 4.88h → 6h rounded
-- Time Savings: 3.34h (40.6% faster)
+- Time Savings: 2h (25% faster)
 
 *Note: Overhead activities and manual adjustments are added to both workflow totals and cannot be accelerated by AI*
 

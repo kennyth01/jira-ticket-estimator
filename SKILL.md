@@ -576,7 +576,7 @@ Example adjustment:
 
 - **Manual Development**: 1.93h → 2h rounded
 - **AI-Assisted Development**: 1.15h → 1h rounded
-- **Time Savings**: 0.78h (40% faster)
+- **Time Savings**: 1h (50% faster)
 ```
 
 7. Track in backlog for calibration

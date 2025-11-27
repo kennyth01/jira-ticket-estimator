@@ -1069,9 +1069,9 @@ class TicketEstimator:
         # Apply bucket rounding to AI-assisted total
         ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_total_with_overhead)
 
-        # Calculate time savings
-        time_savings_hours = total_with_overhead - ai_total_with_overhead
-        time_savings_percentage = (time_savings_hours / total_with_overhead * 100) if total_with_overhead > 0 else 0
+        # Calculate time savings (based on rounded values)
+        time_savings_hours = rounded_hours - ai_rounded_hours
+        time_savings_percentage = (time_savings_hours / rounded_hours * 100) if rounded_hours > 0 else 0
 
         return {
             'project_type': project_type,
