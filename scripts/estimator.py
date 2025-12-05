@@ -1001,23 +1001,6 @@ class TicketEstimator:
             complexity_scores['dependencies']
         )
 
-        # Enforce file_count for large scope
-        if complexity_scores['scope_size'] >= 7 and (file_count is None or file_count == 0):
-            raise ValueError(
-                f"\n{'=' * 70}\n"
-                f"ERROR: High scope_size ({complexity_scores['scope_size']}/10) detected but file_count is missing!\n"
-                f"\n"
-                f"File touch overhead will be significantly underestimated.\n"
-                f"Please run repository reconnaissance to count affected files:\n"
-                f"  - Use Grep/Glob to find all files to be modified\n"
-                f"  - Count unique files across all searches\n"
-                f"  - Pass file_count parameter to estimate_ticket()\n"
-                f"\n"
-                f"Impact: For large refactors (50-100+ files), this can add 2-5 hours\n"
-                f"to the manual workflow estimate.\n"
-                f"{'=' * 70}\n"
-            )
-
         # Get sizing
         t_shirt_size = self.get_t_shirt_size(adjusted_complexity)
         story_points = self.get_story_points(adjusted_complexity, team_velocity)
