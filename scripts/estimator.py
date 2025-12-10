@@ -214,93 +214,81 @@ class TicketEstimator:
         nearest = min(fibonacci, key=lambda x: abs(x - base_points))
         return nearest
 
-    def detect_overhead_activities(self,
-                                   title: str,
-                                   description: str,
-                                   task_type: str,
-                                   project_type: str = None,
-                                   files_involved: List[str] = None) -> List[Dict]:
+    def detect_manual_time_adjustments(self,
+                                       title: str,
+                                       description: str) -> Dict:
         """
-        Detect overhead activities based on keywords and file patterns.
+        Detect manual time adjustments from ticket title/description.
 
         Args:
             title: Ticket title
             description: Ticket description
-            task_type: Task type (bug_fix, enhancement, etc.)
-            project_type: Project type (monolithic, serverless, test_automation, etc.)
-            files_involved: List of file paths involved in the change
 
         Returns:
-            List of detected overhead activities with time and rationale
+            Dict with total adjustment hours and list of detected adjustments
         """
-        if 'overhead_activities' not in self.config:
-            return []
+        config = self.config.get('manual_time_adjustments', {})
 
-        overhead_config = self.config['overhead_activities']
-        detected = []
+        if not config.get('enabled', True):
+            return {
+                'enabled': False,
+                'total_hours': 0,
+                'adjustments': []
+            }
 
-        for activity_key, activity in overhead_config.get('activities', {}).items():
-            # Skip if not enabled
-            if not activity.get('enabled', False):
-                continue
+        patterns = config.get('patterns', [])
+        search_locations = config.get('search_locations', ['title', 'description'])
 
-            # Check if applies to this task type
-            applies_to_task_types = activity.get('applies_to_task_types', [])
-            if applies_to_task_types and task_type not in applies_to_task_types:
-                continue
+        # Combine search text
+        search_text = ''
+        if 'title' in search_locations:
+            search_text += title + ' '
+        if 'description' in search_locations:
+            search_text += description
 
-            # Check if applies to this project type
-            applies_to_project_types = activity.get('applies_to_project_types', [])
-            if applies_to_project_types and project_type and project_type not in applies_to_project_types:
-                continue
+        adjustments = []
+        total_minutes = 0
 
-            detection = activity.get('detection', {})
-            keywords = detection.get('keywords', [])
-            check_title = detection.get('check_title', False)
-            check_description = detection.get('check_description', False)
-            check_files = detection.get('check_files', False)
-            file_patterns = detection.get('file_patterns', [])
+        for pattern_config in patterns:
+            regex = pattern_config.get('regex', '')
+            description_text = pattern_config.get('description', '')
 
-            # Check for keyword matches (using word boundaries)
-            matched_keywords = []
-            text_to_check = ''
+            matches = re.findall(regex, search_text, re.IGNORECASE)
 
-            if check_title:
-                text_to_check += ' ' + title.lower()
-            if check_description:
-                text_to_check += ' ' + description.lower()
+            for match in matches:
+                # Extract number (match could be string or tuple from groups)
+                if isinstance(match, tuple):
+                    number = float(match[0])
+                else:
+                    number = float(match)
 
-            # Check text for keywords with word boundaries
-            for keyword in keywords:
-                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-                if re.search(pattern, text_to_check):
-                    matched_keywords.append(keyword)
+                # Determine if hours or minutes based on pattern
+                if 'm' in regex.lower() and 'h' not in regex.lower():
+                    # Minutes pattern
+                    minutes = number
+                    hours = number / 60.0
+                else:
+                    # Hours pattern
+                    hours = number
+                    minutes = number * 60
 
-            # Check file patterns if files provided
-            file_matches = []
-            if check_files and files_involved:
-                import fnmatch
-                for file_path in files_involved:
-                    file_lower = file_path.lower()
-                    for pattern in file_patterns:
-                        if fnmatch.fnmatch(file_lower, pattern.lower()):
-                            file_matches.append(file_path)
-                            break
-
-            # If we found matches, add to detected
-            if matched_keywords or file_matches:
-                detected.append({
-                    'activity_key': activity_key,
-                    'label': activity.get('label', activity_key),
-                    'description': activity.get('description', ''),
-                    'rationale': activity.get('rationale', ''),
-                    'additional_minutes': activity.get('additional_minutes', 0),
-                    'matched_keywords': matched_keywords[:3],  # Show up to 3 keywords
-                    'matched_files': file_matches[:3],  # Show up to 3 files
-                    'notes': activity.get('notes', '')
+                total_minutes += minutes
+                adjustments.append({
+                    'value': number,
+                    'unit': 'minutes' if 'm' in regex.lower() and 'h' not in regex.lower() else 'hours',
+                    'hours': hours,
+                    'minutes': minutes,
+                    'source': 'title' if match in title else 'description',
+                    'pattern': description_text
                 })
 
-        return detected
+        return {
+            'enabled': True,
+            'total_hours': round(total_minutes / 60.0, 2),
+            'total_minutes': round(total_minutes, 1),
+            'adjustments': adjustments,
+            'count': len(adjustments)
+        }
 
     def calculate_manual_workflow_time(self,
                                       project_type: str,
@@ -1023,18 +1011,17 @@ class TicketEstimator:
             manual_workflow['phases'][impl_phase_key]['time_minutes'] += file_touch_overhead['overhead_minutes']
             manual_workflow['phases'][impl_phase_key]['file_touch_overhead'] = file_touch_overhead
 
-        # Detect overhead activities
-        overhead_activities = self.detect_overhead_activities(title, description, task_type, project_type=project_type, files_involved=None)
+        # Detect manual time adjustments
+        manual_adjustments = self.detect_manual_time_adjustments(title, description)
 
-        # Calculate total overhead time
-        overhead_minutes = sum(activity['additional_minutes'] for activity in overhead_activities)
-        overhead_hours = overhead_minutes / 60.0
+        # Calculate total adjustment time
+        adjustment_hours = manual_adjustments['total_hours']
 
-        # Add overhead to workflow total
-        total_with_overhead = manual_workflow['total_hours'] + overhead_hours
+        # Add adjustments to workflow total
+        total_with_adjustments = manual_workflow['total_hours'] + adjustment_hours
 
-        # Apply bucket rounding (on total including overhead)
-        rounded_hours, rounding_threshold = self.apply_bucket_rounding(total_with_overhead)
+        # Apply bucket rounding (on total including adjustments)
+        rounded_hours, rounding_threshold = self.apply_bucket_rounding(total_with_adjustments)
 
         # Calculate AI-assisted workflow
         ai_assisted_workflow = self.calculate_ai_assisted_workflow_time(
@@ -1046,11 +1033,11 @@ class TicketEstimator:
             has_infrastructure_changes=has_infrastructure_changes
         )
 
-        # Add overhead to AI-assisted total (same overhead applies)
-        ai_total_with_overhead = ai_assisted_workflow['total_hours'] + overhead_hours
+        # Add adjustments to AI-assisted total (same adjustments apply)
+        ai_total_with_adjustments = ai_assisted_workflow['total_hours'] + adjustment_hours
 
         # Apply bucket rounding to AI-assisted total
-        ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_total_with_overhead)
+        ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_total_with_adjustments)
 
         # Calculate time savings (based on rounded values)
         time_savings_hours = rounded_hours - ai_rounded_hours
@@ -1082,17 +1069,12 @@ class TicketEstimator:
             'time_savings': {
                 'hours': round(time_savings_hours, 2),
                 'percentage': round(time_savings_percentage, 1),
-                'manual_total': round(total_with_overhead, 2),
-                'ai_assisted_total': round(ai_total_with_overhead, 2)
+                'manual_total': round(total_with_adjustments, 2),
+                'ai_assisted_total': round(ai_total_with_adjustments, 2)
             },
-            'overhead_activities': {
-                'detected': overhead_activities,
-                'total_overhead_minutes': round(overhead_minutes, 1),
-                'total_overhead_hours': round(overhead_hours, 2),
-                'count': len(overhead_activities)
-            },
-            'total_including_overhead': {
-                'total_hours_calculated': round(total_with_overhead, 2),
+            'manual_time_adjustments': manual_adjustments,
+            'total_including_adjustments': {
+                'total_hours_calculated': round(total_with_adjustments, 2),
                 'total_hours_rounded': rounded_hours,
                 'rounding_threshold': rounding_threshold
             },
@@ -1291,20 +1273,17 @@ if __name__ == '__main__':
     print(f"  {'─' * 50}")
     print(f"  Subtotal (workflow):         {workflow['total_hours']:.2f}h")
 
-    # Show overhead activities
-    overhead = result['overhead_activities']
-    if overhead['count'] > 0:
-        print(f"\nOverhead Activities Detected: {overhead['count']}")
-        for activity in overhead['detected']:
-            print(f"  • {activity['label']}: +{activity['additional_minutes']} min")
-            print(f"    Reason: {activity['rationale']}")
-            if activity['matched_keywords']:
-                print(f"    Keywords: {', '.join(activity['matched_keywords'])}")
-        print(f"  Total Overhead: {overhead['total_overhead_minutes']} min ({overhead['total_overhead_hours']}h)")
+    # Show manual time adjustments
+    adjustments = result['manual_time_adjustments']
+    if adjustments['count'] > 0:
+        print(f"\nManual Time Adjustments Detected: {adjustments['count']}")
+        for adj in adjustments['adjustments']:
+            print(f"  • +{adj['value']}{adj['unit'][0]}: {adj['hours']:.2f}h from {adj['source']}")
+        print(f"  Total Adjustments: {adjustments['total_minutes']} min ({adjustments['total_hours']}h)")
 
-    totals = result['total_including_overhead']
+    totals = result['total_including_adjustments']
     print(f"\n  {'─' * 50}")
-    print(f"  TOTAL (with overhead):       {totals['total_hours_calculated']:.2f}h")
+    print(f"  TOTAL (with adjustments):    {totals['total_hours_calculated']:.2f}h")
     print(f"  TOTAL (rounded to bucket):   {totals['total_hours_rounded']}h")
 
     print("\n" + "=" * 70)

@@ -106,7 +106,7 @@ Scan ticket title and description for explicit time additions:
 - "manual testing required +2h"
 - "coordinate with DevOps team (30m)"
 
-These adjustments are added on top of calculated estimates and overhead activities.
+These adjustments are added on top of calculated estimates.
 
 ### 5. Score Complexity Factors
 
@@ -171,7 +171,7 @@ result = estimator.estimate_ticket(
 print(json.dumps(result, indent=2))
 ```
 
-Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected overhead activities.
+Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected manual time adjustments.
 
 ### 7. Parse and Format Results
 
@@ -182,7 +182,6 @@ Extract from JSON output:
 - Raw and adjusted complexity scores
 - Manual workflow phase-by-phase time breakdown
 - AI-assisted workflow phase-by-phase time breakdown
-- Detected overhead activities
 - Detected manual time adjustments
 - Time savings comparison
 - Total time (calculated and rounded)
@@ -223,9 +222,9 @@ Format output as markdown table:
 **Complexity**: <raw>/10 → <adjusted>/10 (scale factor: <sf>)
 **Files Affected**: <files count>
 **Manual Development Total**: Xd Xh (or Xh if < 8h)
-- Breakdown: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+- Breakdown: X.XXh (workflow) + X.XXh (manual adjustments) = X.XXh → Xh rounded
 **AI-Assisted Development Total**: Xd Xh (or Xh if < 8h)
-- Breakdown: X.XXh (workflow) + X.XXh (overhead) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+- Breakdown: X.XXh (workflow) + X.XXh (manual adjustments) = X.XXh → Xh rounded
 **Time Savings**: XX.X%
 
 ## Manual Development Time Breakdown
@@ -258,21 +257,6 @@ Format output as markdown table:
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
-## Overhead Activities
-
-*Overhead activities apply to BOTH manual and AI-assisted workflows*
-
-*If any overhead activities detected:*
-
-| Activity | Time | Reason |
-|----------|------|--------|
-| Database Change Management | +20 min | Create DBA ticket + Confluence doc |
-| Cross-Team Coordination | +30 min | Coordinate with ops/infrastructure team |
-| Security Review | +30 min | Submit review + address findings |
-| **Total Overhead** | **+X min (X.XXh)** | |
-
-*If no overheads detected: Skip this section*
-
 ## Manual Time Adjustments
 
 *Manual time adjustments apply to BOTH manual and AI-assisted workflows*
@@ -287,7 +271,7 @@ Format output as markdown table:
 
 *If no manual adjustments detected: Skip this section*
 
-*Note: Overhead time and manual adjustments are the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
+*Note: Manual adjustments are the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
 
 ## Complexity Scores
 
@@ -376,7 +360,6 @@ Five project types with customized workflow phases:
 - Phase 7 - Documentation: 54 min @ complexity 5
 - Phase 8 - Feedback & Iterations: 35 min @ complexity 5 (scales with complexity)
 - **AI-Assisted**: 45% time savings across all phases
-- **Common Overhead**: Regression Assurance (+45 min)
 
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
@@ -418,17 +401,6 @@ All parameters stored in `heuristics.json`:
 - Deploy times with/without infrastructure changes
 - AI time savings percentages
 
-### Overhead Activities
-- Database change management (+20 min by default)
-- Cross-team coordination (+30 min by default)
-- Regression assurance & validation (+45 min, for test_automation project type)
-- Security review (disabled by default)
-- Legal/compliance review (disabled by default)
-- Documentation update (disabled by default)
-- Custom overheads for your team's processes
-
-See `references/overhead-activities.md` for configuration guide.
-
 ### Manual Time Adjustments
 - Automatic detection of explicit time additions in ticket content
 - Supports patterns: `(+4h)`, `+2h`, `(30m)`, `+15 minutes`
@@ -445,7 +417,7 @@ Final estimates are snapped to standardized time buckets using a threshold-based
 
 **Day size**: 1d = 8h
 
-**Rule**: Compute the precise grand total (workflow + overhead + manual adjustments), then snap to the nearest bucket using a **threshold-based approach**.
+**Rule**: Compute the precise grand total (workflow + manual adjustments), then snap to the nearest bucket using a **threshold-based approach**.
 - For each bucket, calculate the threshold as **current + 75% of gap to next bucket**
 - If calculated total ≤ threshold, stay at current bucket; otherwise, jump to next bucket
 - If result > 5d (40h) → Split the scope (ticket too large)
@@ -521,7 +493,6 @@ Example adjustment:
 - `references/task-type-classification.md` - Detailed task type guide
 - `references/complexity-scoring-guide.md` - Factor-by-factor scoring guide
 - `references/workflow-formulas.md` - Complete formulas and examples
-- `references/overhead-activities.md` - Project-specific overhead configuration guide
 
 ## Example Usage
 
@@ -607,10 +578,9 @@ Before calling `estimator.estimate_ticket()`, ensure you have:
 - **Estimates are predictive** - refine after reconnaissance
 - **Both workflows calculated automatically** - choose based on your development approach
 - **AI-assisted estimates assume**: Effective prompt engineering, experienced with AI tools, quality review process
-- **Overhead activities are configurable** - enable/disable based on your processes
 - **Manual time adjustments detected automatically** - use `(+Xh)` or `+Xh` format in ticket content
 - **File touch overhead is CRITICAL** - always count files during reconnaissance, adds 2.5 min/file to manual workflow
-- **Track actual vs estimated** by phase, overhead, and adjustments for calibration
+- **Track actual vs estimated** by phase and adjustments for calibration
 - **Adjust `heuristics.json`** based on team historical data
 - **Use `--update-jira`** to persist story points automatically
 - **Open-source ready** - all team-specific configs in heuristics.json

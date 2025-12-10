@@ -737,137 +737,6 @@
       }
     },
 
-    "overhead_activities": {
-      "description": "Additional time for project-specific processes and workflows that occur outside core development",
-      "activities": {
-        "database_changes": {
-          "enabled": true,
-          "label": "Database Change Management",
-          "description": "Extra time for creating DBA ticket and Confluence documentation when database changes are involved",
-          "additional_minutes": 20,
-          "rationale": "Process: Create JIRA ticket for DBA to execute manually on test/prod DB + attach to Confluence page",
-          "detection": {
-            "keywords": [
-              "migration", "database", "db", "table", "column", "index", "schema",
-              "create table", "alter table", "drop table", "add column", "modify column",
-              "add index", "create index", "foreign key", "constraint"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": true,
-            "file_patterns": ["*migration*", "*schema*", "*.sql"]
-          },
-          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
-          "notes": "Applied once per ticket, regardless of number of DB changes"
-        },
-        "security_review": {
-          "enabled": false,
-          "label": "Security Review Process",
-          "description": "Extra time for mandatory security review for auth/permission changes",
-          "additional_minutes": 30,
-          "rationale": "Process: Submit security review request + address findings",
-          "detection": {
-            "keywords": [
-              "security", "auth", "authentication", "authorization", "permission",
-              "credential", "token", "oauth", "sso", "role", "access control"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": false
-          },
-          "applies_to_task_types": ["net_new", "enhancement", "refactor"],
-          "notes": "Enable if your organization requires formal security reviews"
-        },
-        "legal_compliance": {
-          "enabled": false,
-          "label": "Legal/Compliance Review",
-          "description": "Extra time for legal review of user-facing content or data handling changes",
-          "additional_minutes": 45,
-          "rationale": "Process: Submit to legal team + incorporate feedback",
-          "detection": {
-            "keywords": [
-              "privacy", "gdpr", "ccpa", "terms", "policy", "consent",
-              "data collection", "pii", "personal data"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": false
-          },
-          "applies_to_task_types": ["net_new", "enhancement"],
-          "notes": "Enable if your organization requires legal review for certain changes"
-        },
-        "documentation_update": {
-          "enabled": false,
-          "label": "Documentation Update",
-          "description": "Extra time for updating user-facing documentation or API docs",
-          "additional_minutes": 15,
-          "rationale": "Process: Update docs in wiki/confluence/readme + request review",
-          "detection": {
-            "keywords": [
-              "api change", "breaking change", "new feature", "user-facing",
-              "public api", "documentation needed"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": false
-          },
-          "applies_to_task_types": ["net_new", "enhancement"],
-          "notes": "Enable if documentation updates are tracked separately from code"
-        },
-        "cross_team_coordination": {
-          "enabled": true,
-          "label": "Cross-Team Coordination",
-          "description": "Extra time for coordinating with other teams (DevOps, infrastructure, operations, platform, etc.)",
-          "additional_minutes": 30,
-          "rationale": "Process: Create coordination tickets + discuss deployment/removal process + explain changes + get approvals",
-          "detection": {
-            "keywords": [
-              "devops", "infrastructure team", "ops team", "operations team",
-              "platform team", "sre team", "site reliability",
-              "collab with", "collaborate with", "coordinate with", "work with team",
-              "discuss with", "explain to", "sync with", "align with",
-              "deployment process", "removal process", "rollout process",
-              "infrastructure change", "server change", "environment change",
-              "create ticket for", "coordinate deployment", "handoff to"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": false
-          },
-          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
-          "notes": "Enable if cross-team coordination is required for infrastructure, deployment, or operational tasks"
-        },
-        "regression_assurance": {
-          "enabled": true,
-          "label": "Regression Assurance & Validation",
-          "description": "Extra time for comprehensive regression testing, validation across multiple flows, and evidence collection for test automation changes",
-          "additional_minutes": 45,
-          "rationale": "Process: Execute regression tests across affected flows + validate OTP/auth paths + collect evidence + stabilize flaky tests",
-          "detection": {
-            "keywords": [
-              "regression", "test automation", "serenity", "automation test", "e2e test",
-              "integration test", "test suite", "test coverage", "test framework",
-              "playwright", "cypress", "selenium", "test scenarios",
-              "flows", "user journey", "validation", "evidence collection"
-            ],
-            "check_title": true,
-            "check_description": true,
-            "check_files": true,
-            "file_patterns": ["*test*", "*spec*", "*e2e*"]
-          },
-          "applies_to_task_types": ["net_new", "enhancement", "refactor", "bug_fix"],
-          "applies_to_project_types": ["test_automation"],
-          "notes": "Primarily for test automation projects where changes require extensive regression validation across multiple user flows and scenarios"
-        }
-      },
-      "notes": [
-        "Overhead activities are detected automatically based on keywords",
-        "Multiple overheads can apply to a single ticket",
-        "Teams should customize keywords and times based on their processes",
-        "Disable activities that don't apply to your workflow"
-      ]
-    },
-
     "manual_time_adjustments": {
       "description": "Detect and apply explicit time adjustments specified in ticket title or description",
       "enabled": true,
@@ -898,7 +767,7 @@
       "notes": [
         "Patterns are checked in order; first match wins per occurrence",
         "All matches are summed together for total adjustment",
-        "Manual adjustments are added on top of calculated estimates and overhead",
+        "Manual adjustments are added on top of calculated estimates",
         "Use parentheses format (+Xh) to clearly indicate additional time",
         "Hours (h/hours) and minutes (m/min/minutes) are supported",
         "Decimal values supported: +2.5h, +1.5 hours"
