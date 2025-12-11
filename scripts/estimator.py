@@ -1014,14 +1014,32 @@ class TicketEstimator:
         # Detect manual time adjustments
         manual_adjustments = self.detect_manual_time_adjustments(title, description)
 
-        # Calculate total adjustment time
-        adjustment_hours = manual_adjustments['total_hours']
+        # Add Phase 9 to manual workflow if manual adjustments detected
+        if manual_adjustments['total_minutes'] > 0:
+            # Build detailed description from adjustments
+            adjustment_details = []
+            for adj in manual_adjustments['adjustments']:
+                if adj['unit'] == 'hours':
+                    adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
+                else:
+                    adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
 
-        # Add adjustments to workflow total
-        total_with_adjustments = manual_workflow['total_hours'] + adjustment_hours
+            details_text = ", ".join(adjustment_details)
 
-        # Apply bucket rounding (on total including adjustments)
-        rounded_hours, rounding_threshold = self.apply_bucket_rounding(total_with_adjustments)
+            manual_workflow['phases']['9_manual_adjustments'] = {
+                'label': 'Overhead Activities',
+                'description': f'Additional time specified in ticket: {details_text}',
+                'time_minutes': round(manual_adjustments['total_minutes'], 1),
+                'adjustments': manual_adjustments['adjustments'],
+                'scales_with_complexity': False
+            }
+            # Add to workflow totals
+            manual_workflow['manual_adjustments'] = round(manual_adjustments['total_minutes'], 1)
+            manual_workflow['total_minutes'] += manual_adjustments['total_minutes']
+            manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
+
+        # Apply bucket rounding to manual workflow total (now includes Phase 9)
+        rounded_hours, rounding_threshold = self.apply_bucket_rounding(manual_workflow['total_hours'])
 
         # Calculate AI-assisted workflow
         ai_assisted_workflow = self.calculate_ai_assisted_workflow_time(
@@ -1033,11 +1051,32 @@ class TicketEstimator:
             has_infrastructure_changes=has_infrastructure_changes
         )
 
-        # Add adjustments to AI-assisted total (same adjustments apply)
-        ai_total_with_adjustments = ai_assisted_workflow['total_hours'] + adjustment_hours
+        # Add Phase 9 to AI-assisted workflow if manual adjustments detected (same adjustments)
+        if manual_adjustments['total_minutes'] > 0:
+            # Build detailed description from adjustments
+            adjustment_details = []
+            for adj in manual_adjustments['adjustments']:
+                if adj['unit'] == 'hours':
+                    adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
+                else:
+                    adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
 
-        # Apply bucket rounding to AI-assisted total
-        ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_total_with_adjustments)
+            details_text = ", ".join(adjustment_details)
+
+            ai_assisted_workflow['phases']['9_manual_adjustments'] = {
+                'label': 'Overhead Activities',
+                'description': f'Additional time specified in ticket: {details_text}',
+                'time_minutes': round(manual_adjustments['total_minutes'], 1),
+                'adjustments': manual_adjustments['adjustments'],
+                'scales_with_complexity': False
+            }
+            # Add to workflow totals
+            ai_assisted_workflow['manual_adjustments'] = round(manual_adjustments['total_minutes'], 1)
+            ai_assisted_workflow['total_minutes'] += manual_adjustments['total_minutes']
+            ai_assisted_workflow['total_hours'] = round(ai_assisted_workflow['total_minutes'] / 60.0, 2)
+
+        # Apply bucket rounding to AI-assisted workflow total (now includes Phase 9)
+        ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_assisted_workflow['total_hours'])
 
         # Calculate time savings (based on rounded values)
         time_savings_hours = rounded_hours - ai_rounded_hours
@@ -1069,15 +1108,10 @@ class TicketEstimator:
             'time_savings': {
                 'hours': round(time_savings_hours, 2),
                 'percentage': round(time_savings_percentage, 1),
-                'manual_total': round(total_with_adjustments, 2),
-                'ai_assisted_total': round(ai_total_with_adjustments, 2)
+                'manual_total': manual_workflow['total_hours'],
+                'ai_assisted_total': ai_assisted_workflow['total_hours']
             },
             'manual_time_adjustments': manual_adjustments,
-            'total_including_adjustments': {
-                'total_hours_calculated': round(total_with_adjustments, 2),
-                'total_hours_rounded': rounded_hours,
-                'rounding_threshold': rounding_threshold
-            },
             'team_velocity': team_velocity,
             'has_infrastructure_changes': has_infrastructure_changes
         }
@@ -1124,6 +1158,7 @@ if __name__ == '__main__':
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
     print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -1160,6 +1195,7 @@ if __name__ == '__main__':
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
     print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -1196,6 +1232,7 @@ if __name__ == '__main__':
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
     print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -1270,21 +1307,21 @@ if __name__ == '__main__':
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
     print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Subtotal (workflow):         {workflow['total_hours']:.2f}h")
 
-    # Show manual time adjustments
+    # Show overhead activities (Phase 9)
     adjustments = result['manual_time_adjustments']
     if adjustments['count'] > 0:
-        print(f"\nManual Time Adjustments Detected: {adjustments['count']}")
+        print(f"\nOverhead Activities (Phase 9) Detected: {adjustments['count']}")
         for adj in adjustments['adjustments']:
             print(f"  • +{adj['value']}{adj['unit'][0]}: {adj['hours']:.2f}h from {adj['source']}")
-        print(f"  Total Adjustments: {adjustments['total_minutes']} min ({adjustments['total_hours']}h)")
+        print(f"  Total Overhead (Phase 9): {adjustments['total_minutes']} min ({adjustments['total_hours']}h)")
 
-    totals = result['total_including_adjustments']
     print(f"\n  {'─' * 50}")
-    print(f"  TOTAL (with adjustments):    {totals['total_hours_calculated']:.2f}h")
-    print(f"  TOTAL (rounded to bucket):   {totals['total_hours_rounded']}h")
+    print(f"  TOTAL (calculated):          {workflow['total_hours']:.2f}h")
+    print(f"  TOTAL (rounded to bucket):   {workflow['total_hours_rounded']}h")
 
     print("\n" + "=" * 70)
     print("END OF EXAMPLES")

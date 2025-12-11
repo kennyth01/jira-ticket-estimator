@@ -222,9 +222,9 @@ Format output as markdown table:
 **Complexity**: <raw>/10 → <adjusted>/10 (scale factor: <sf>)
 **Files Affected**: <files count>
 **Manual Development Total**: Xd Xh (or Xh if < 8h)
-- Breakdown: X.XXh (workflow) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+- Breakdown: X.XXh (includes overhead if any) → Xh rounded
 **AI-Assisted Development Total**: Xd Xh (or Xh if < 8h)
-- Breakdown: X.XXh (workflow) + X.XXh (manual adjustments) = X.XXh → Xh rounded
+- Breakdown: X.XXh (includes overhead if any) → Xh rounded
 **Time Savings**: XX.X%
 
 ## Manual Development Time Breakdown
@@ -239,6 +239,7 @@ Format output as markdown table:
 | 6. Deployment to Test | X min | Deploy to test environment |
 | 7. Verification | X min | Smoke tests, verification (scales with complexity) |
 | 8. Feedback & Iterations | X min | Incorporate stakeholder feedback, iterate on changes |
+| **9. Overhead Activities** | **X min** | **+Xh from title, +Xm from description** (if detected) |
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
 
@@ -254,24 +255,9 @@ Format output as markdown table:
 | 6. Deploy to Test | X min | Deploy to test environment |
 | 7. Test Verification | X min | Smoke tests, E2E verification |
 | 8. Feedback & Iterations | X min | Incorporate stakeholder feedback, iterate on AI-generated changes |
+| **9. Overhead Activities** | **X min** | **+Xh from title, +Xm from description** (if detected) |
 | **TOTAL (calculated)** | **X.XXh** | |
 | **TOTAL (rounded)** | **Xh** | Snapped to bucket |
-
-## Manual Time Adjustments
-
-*Manual time adjustments apply to BOTH manual and AI-assisted workflows*
-
-*If manual time adjustments detected in ticket:*
-
-| Adjustment | Time | Source |
-|------------|------|--------|
-| Manual time addition | +4h | Title: "ensure qa automation run is not affected (+4h)" |
-| Additional testing | +30m | Description: "manual regression testing +30m" |
-| **Total Adjustments** | **+X.XXh** | |
-
-*If no manual adjustments detected: Skip this section*
-
-*Note: Manual adjustments are the same for both workflows. Only the core workflow phases benefit from AI acceleration.*
 
 ## Complexity Scores
 
@@ -363,7 +349,7 @@ Five project types with customized workflow phases:
 
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
-## The 8-Phase Manual Workflow
+## The 9-Phase Manual Workflow
 
 Estimates follow real development phases:
 
@@ -375,8 +361,11 @@ Estimates follow real development phases:
 6. **Deployment to Test** - Deploy to test environment (fixed time, infra-aware)
 7. **Verification** - Smoke tests, verification (scales with complexity)
 8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification
+9. **Overhead Activities** - Additional time specified in ticket (optional, only if detected)
 
-## The 8-Phase AI-Assisted Workflow
+**Note**: Phase 9 only appears if overhead activities like `(+4h)` or `+30m` are detected in the ticket title or description.
+
+## The 9-Phase AI-Assisted Workflow
 
 AI-assisted development follows these phases:
 
@@ -388,6 +377,9 @@ AI-assisted development follows these phases:
 6. **Deploy to Test** - Deploy to test environment
 7. **Test Verification** - Smoke tests, E2E verification, validation
 8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification
+9. **Overhead Activities** - Additional time specified in ticket (optional, only if detected)
+
+**Note**: Phase 9 applies to both workflows. Overhead activities are the same for manual and AI-assisted development. Only the core workflow phases (1-8) benefit from AI acceleration.
 
 Typical time savings: 40-50% compared to manual development.
 
@@ -401,12 +393,13 @@ All parameters stored in `heuristics.json`:
 - Deploy times with/without infrastructure changes
 - AI time savings percentages
 
-### Manual Time Adjustments
+### Overhead Activities (Phase 9)
 - Automatic detection of explicit time additions in ticket content
 - Supports patterns: `(+4h)`, `+2h`, `(30m)`, `+15 minutes`
 - Supports hours and minutes notation
 - Supports decimal values: `+2.5h`
-- All detected adjustments are summed and added to final estimate
+- All detected adjustments are summed and added as Phase 9 to both workflows
+- Appears in phase breakdown tables when detected
 - Can be disabled by setting `"enabled": false` in heuristics.json
 
 ### Bucket Rounding
@@ -417,7 +410,7 @@ Final estimates are snapped to standardized time buckets using a threshold-based
 
 **Day size**: 1d = 8h
 
-**Rule**: Compute the precise grand total (workflow + manual adjustments), then snap to the nearest bucket using a **threshold-based approach**.
+**Rule**: Compute the precise grand total (workflow phases 1-9, which includes overhead in Phase 9 if detected), then snap to the nearest bucket using a **threshold-based approach**.
 - For each bucket, calculate the threshold as **current + 75% of gap to next bucket**
 - If calculated total ≤ threshold, stay at current bucket; otherwise, jump to next bucket
 - If result > 5d (40h) → Split the scope (ticket too large)
