@@ -214,6 +214,110 @@ class TicketEstimator:
         nearest = min(fibonacci, key=lambda x: abs(x - base_points))
         return nearest
 
+    def classify_manual_adjustment_to_phase(self,
+                                            title: str,
+                                            description: str,
+                                            project_type: str) -> str:
+        """
+        Classify a manual time adjustment to determine which phase it belongs to.
+
+        Args:
+            title: Ticket title
+            description: Ticket description (context where adjustment was found)
+            project_type: Project type to determine available phases
+
+        Returns:
+            Phase key (e.g., 'verification', 'testing') or None if doesn't match any phase
+        """
+        combined_text = f"{title} {description}".lower()
+
+        # Phase classification patterns (order matters - most specific first)
+        phase_patterns = {
+            # Code Review phase (CHECK FIRST - most specific)
+            'code_review': [
+                r'\bcode\s+review\b',
+                r'\bpeer\s+review\b',
+                r'\bsecurity\s+review\b',
+                r'\breview\s+(with|by)\b',
+                r'\bpr\s+review\b',
+                r'\bpull\s+request\s+review\b',
+                r'\baddress\s+(review\s+)?feedback\b'
+            ],
+            # Self Review phase
+            'self_review': [
+                r'\bself.?review\b'
+            ],
+            # Verification phase
+            'verification': [
+                r'\bqa\b',
+                r'\bquality\s+assurance\b',
+                r'\bmanual\s+test(ing)?\b',
+                r'\bsmoke\s+test\b',
+                r'\bsanity\s+test\b',
+                r'\bverification\b',
+                r'\bverify\b',
+                r'\bqa\s+(self\s+)?run\b',
+                r'\be2e\s+test\b',
+                r'\bend.?to.?end\s+test\b'
+            ],
+            # Testing phase
+            'testing': [
+                r'\bunit\s+test\b',
+                r'\bintegration\s+test\b',
+                r'\btest\s+coverage\b',
+                r'\bwrite\s+test\b',
+                r'\btest\s+case\b',
+                r'\btest\s+development\b',
+                r'\btesting\s+(requirement|effort|time)\b'
+            ],
+            # Planning & Design phase
+            'planning_design': [
+                r'\bplanning\s+(session|meeting|discussion)\b',
+                r'\barchitecture\s+(planning|design)\b',
+                r'\bdesign\s+(session|meeting|document)\b',
+                r'\btechnical\s+spec\b',
+                r'\bspecification\b',
+                r'\brequirement\s+(analysis|gathering)\b'
+            ],
+            # Implementation phase
+            'implementation': [
+                r'\bimplementation\b',
+                r'\bcoding\b',
+                r'\bdevelopment\b',
+                r'\bwrite\s+code\b',
+                r'\bdevelop\s+feature\b',
+                r'\badditional\s+(implementation|coding)\b'
+            ],
+            # Deployment phase
+            'deployment_to_test': [
+                r'\bdeployment\b',
+                r'\bdeploy\b',
+                r'\brelease\b',
+                r'\brollout\b',
+                r'\bdeploy\s+to\s+(test|staging|dev)\b'
+            ],
+            # Feedback & Iterations phase
+            'feedback_iterations': [
+                r'\bfeedback\b',
+                r'\biteration\b',
+                r'\brefinement\b',
+                r'\badjust\b',
+                r'\btweak\b',
+                r'\bpolish\b',
+                r'\bincorporate\s+feedback\b',
+                r'\biterative\s+(development|work)\b'
+            ]
+        }
+
+        # Check each phase pattern
+        for phase_key, patterns in phase_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, combined_text):
+                    return phase_key
+
+        # No match found
+        return None
+
     def detect_manual_time_adjustments(self,
                                        title: str,
                                        description: str) -> Dict:
@@ -248,19 +352,31 @@ class TicketEstimator:
 
         adjustments = []
         total_minutes = 0
+        seen_positions = set()  # Track positions to avoid overlapping matches
 
         for pattern_config in patterns:
             regex = pattern_config.get('regex', '')
             description_text = pattern_config.get('description', '')
 
-            matches = re.findall(regex, search_text, re.IGNORECASE)
+            # Use finditer to get match objects with positions
+            for match_obj in re.finditer(regex, search_text, re.IGNORECASE):
+                # Skip if this position overlaps with a previous match
+                match_range = range(match_obj.start(), match_obj.end())
+                if any(pos in seen_positions for pos in match_range):
+                    continue
 
-            for match in matches:
-                # Extract number (match could be string or tuple from groups)
-                if isinstance(match, tuple):
-                    number = float(match[0])
+                # Mark this range as seen
+                seen_positions.update(match_range)
+
+                match = match_obj.group(0)
+
+                # Extract number (from first captured group)
+                if match_obj.groups():
+                    number = float(match_obj.group(1))
                 else:
-                    number = float(match)
+                    # Fallback: try to extract number from match
+                    num_match = re.search(r'(\d+(?:\.\d+)?)', match)
+                    number = float(num_match.group(1)) if num_match else 0
 
                 # Determine if hours or minutes based on pattern
                 if 'm' in regex.lower() and 'h' not in regex.lower():
@@ -272,14 +388,30 @@ class TicketEstimator:
                     hours = number
                     minutes = number * 60
 
+                # Extract context: find the line containing this match
+                # Find line boundaries
+                line_start = search_text.rfind('\n', 0, match_obj.start()) + 1
+                line_end = search_text.find('\n', match_obj.end())
+                if line_end == -1:
+                    line_end = len(search_text)
+
+                # Extract just the current line as context
+                context = search_text[line_start:line_end].strip()
+
+                # Determine source more accurately
+                source = 'title' if match_obj.start() < len(title) else 'description'
+
                 total_minutes += minutes
                 adjustments.append({
                     'value': number,
                     'unit': 'minutes' if 'm' in regex.lower() and 'h' not in regex.lower() else 'hours',
                     'hours': hours,
                     'minutes': minutes,
-                    'source': 'title' if match in title else 'description',
-                    'pattern': description_text
+                    'source': source,
+                    'pattern': description_text,
+                    'context': context,
+                    'matched_text': match,
+                    'position': (match_obj.start(), match_obj.end())
                 })
 
         return {
@@ -913,6 +1045,80 @@ class TicketEstimator:
                 return key
         raise ValueError("No implementation phase found in workflow phases")
 
+    def distribute_adjustments_to_phases(self,
+                                        workflow: Dict,
+                                        adjustments: List[Dict],
+                                        title: str,
+                                        description: str,
+                                        project_type: str) -> Tuple[Dict, List[Dict]]:
+        """
+        Distribute manual time adjustments to their appropriate workflow phases.
+
+        Args:
+            workflow: Workflow dict with phases
+            adjustments: List of adjustment dicts from detect_manual_time_adjustments
+            title: Ticket title
+            description: Ticket description
+            project_type: Project type
+
+        Returns:
+            Tuple of (updated workflow, unmatched adjustments for Phase 9)
+        """
+        unmatched_adjustments = []
+        phase_adjustments = {}  # Track adjustments per phase
+
+        for adj in adjustments:
+            # Use context to classify to a phase
+            context = adj.get('context', '')
+            matched_text = adj.get('matched_text', '')
+
+            # Classify using context + matched text
+            phase_key = self.classify_manual_adjustment_to_phase(
+                title=matched_text,
+                description=context,
+                project_type=project_type
+            )
+
+            if phase_key:
+                # Find the correct phase number key in workflow
+                phase_number_key = None
+                for key in workflow['phases'].keys():
+                    if phase_key in key:
+                        phase_number_key = key
+                        break
+
+                if phase_number_key:
+                    # Add time to the phase
+                    workflow['phases'][phase_number_key]['time_minutes'] += adj['minutes']
+
+                    # Track this adjustment
+                    if phase_number_key not in phase_adjustments:
+                        phase_adjustments[phase_number_key] = []
+                    phase_adjustments[phase_number_key].append(adj)
+
+                    # Add to totals
+                    workflow['total_minutes'] += adj['minutes']
+                    workflow['total_hours'] = round(workflow['total_minutes'] / 60.0, 2)
+
+                    # Also update the shorthand key if it exists
+                    shorthand_key = phase_key
+                    if shorthand_key in workflow:
+                        workflow[shorthand_key] += adj['minutes']
+                else:
+                    # Phase key not found in workflow, treat as unmatched
+                    unmatched_adjustments.append(adj)
+            else:
+                # No phase match, add to unmatched
+                unmatched_adjustments.append(adj)
+
+        # Add adjustment details to each phase
+        for phase_key, adjs in phase_adjustments.items():
+            if 'manual_adjustments' not in workflow['phases'][phase_key]:
+                workflow['phases'][phase_key]['manual_adjustments'] = []
+            workflow['phases'][phase_key]['manual_adjustments'].extend(adjs)
+
+        return workflow, unmatched_adjustments
+
     def estimate_ticket(self,
                        title: str,
                        description: str,
@@ -1014,29 +1220,43 @@ class TicketEstimator:
         # Detect manual time adjustments
         manual_adjustments = self.detect_manual_time_adjustments(title, description)
 
-        # Add Phase 9 to manual workflow if manual adjustments detected
+        # Distribute adjustments to appropriate phases
         if manual_adjustments['total_minutes'] > 0:
-            # Build detailed description from adjustments
-            adjustment_details = []
-            for adj in manual_adjustments['adjustments']:
-                if adj['unit'] == 'hours':
-                    adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
-                else:
-                    adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
+            manual_workflow, unmatched_adjustments = self.distribute_adjustments_to_phases(
+                workflow=manual_workflow,
+                adjustments=manual_adjustments['adjustments'],
+                title=title,
+                description=description,
+                project_type=project_type
+            )
 
-            details_text = ", ".join(adjustment_details)
+            # Only create Phase 9 if there are unmatched adjustments
+            if unmatched_adjustments:
+                # Build detailed description from unmatched adjustments
+                adjustment_details = []
+                unmatched_total_minutes = 0
+                for adj in unmatched_adjustments:
+                    if adj['unit'] == 'hours':
+                        adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
+                    else:
+                        adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
+                    unmatched_total_minutes += adj['minutes']
 
-            manual_workflow['phases']['9_manual_adjustments'] = {
-                'label': 'Overhead Activities',
-                'description': f'Additional time specified in ticket: {details_text}',
-                'time_minutes': round(manual_adjustments['total_minutes'], 1),
-                'adjustments': manual_adjustments['adjustments'],
-                'scales_with_complexity': False
-            }
-            # Add to workflow totals
-            manual_workflow['manual_adjustments'] = round(manual_adjustments['total_minutes'], 1)
-            manual_workflow['total_minutes'] += manual_adjustments['total_minutes']
-            manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
+                details_text = ", ".join(adjustment_details)
+
+                manual_workflow['phases']['9_overhead_activities'] = {
+                    'label': 'Overhead Activities',
+                    'description': f'Additional time specified in ticket: {details_text}',
+                    'time_minutes': round(unmatched_total_minutes, 1),
+                    'adjustments': unmatched_adjustments,
+                    'scales_with_complexity': False
+                }
+                # Add to workflow totals (already added by distribute_adjustments_to_phases for matched ones)
+                manual_workflow['total_minutes'] += unmatched_total_minutes
+                manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
+
+            # Track all adjustments
+            manual_workflow['manual_adjustments_total'] = round(manual_adjustments['total_minutes'], 1)
 
         # Apply bucket rounding to manual workflow total (now includes Phase 9)
         rounded_hours, rounding_threshold = self.apply_bucket_rounding(manual_workflow['total_hours'])
@@ -1051,29 +1271,43 @@ class TicketEstimator:
             has_infrastructure_changes=has_infrastructure_changes
         )
 
-        # Add Phase 9 to AI-assisted workflow if manual adjustments detected (same adjustments)
+        # Distribute adjustments to AI-assisted workflow (same logic as manual)
         if manual_adjustments['total_minutes'] > 0:
-            # Build detailed description from adjustments
-            adjustment_details = []
-            for adj in manual_adjustments['adjustments']:
-                if adj['unit'] == 'hours':
-                    adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
-                else:
-                    adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
+            ai_assisted_workflow, ai_unmatched_adjustments = self.distribute_adjustments_to_phases(
+                workflow=ai_assisted_workflow,
+                adjustments=manual_adjustments['adjustments'],
+                title=title,
+                description=description,
+                project_type=project_type
+            )
 
-            details_text = ", ".join(adjustment_details)
+            # Only create Phase 9 if there are unmatched adjustments
+            if ai_unmatched_adjustments:
+                # Build detailed description from unmatched adjustments
+                adjustment_details = []
+                ai_unmatched_total_minutes = 0
+                for adj in ai_unmatched_adjustments:
+                    if adj['unit'] == 'hours':
+                        adjustment_details.append(f"+{adj['value']}h from {adj['source']}")
+                    else:
+                        adjustment_details.append(f"+{adj['value']}m from {adj['source']}")
+                    ai_unmatched_total_minutes += adj['minutes']
 
-            ai_assisted_workflow['phases']['9_manual_adjustments'] = {
-                'label': 'Overhead Activities',
-                'description': f'Additional time specified in ticket: {details_text}',
-                'time_minutes': round(manual_adjustments['total_minutes'], 1),
-                'adjustments': manual_adjustments['adjustments'],
-                'scales_with_complexity': False
-            }
-            # Add to workflow totals
-            ai_assisted_workflow['manual_adjustments'] = round(manual_adjustments['total_minutes'], 1)
-            ai_assisted_workflow['total_minutes'] += manual_adjustments['total_minutes']
-            ai_assisted_workflow['total_hours'] = round(ai_assisted_workflow['total_minutes'] / 60.0, 2)
+                details_text = ", ".join(adjustment_details)
+
+                ai_assisted_workflow['phases']['9_overhead_activities'] = {
+                    'label': 'Overhead Activities',
+                    'description': f'Additional time specified in ticket: {details_text}',
+                    'time_minutes': round(ai_unmatched_total_minutes, 1),
+                    'adjustments': ai_unmatched_adjustments,
+                    'scales_with_complexity': False
+                }
+                # Add to workflow totals (already added by distribute_adjustments_to_phases for matched ones)
+                ai_assisted_workflow['total_minutes'] += ai_unmatched_total_minutes
+                ai_assisted_workflow['total_hours'] = round(ai_assisted_workflow['total_minutes'] / 60.0, 2)
+
+            # Track all adjustments
+            ai_assisted_workflow['manual_adjustments_total'] = round(manual_adjustments['total_minutes'], 1)
 
         # Apply bucket rounding to AI-assisted workflow total (now includes Phase 9)
         ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_assisted_workflow['total_hours'])
@@ -1157,7 +1391,7 @@ if __name__ == '__main__':
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
-    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  7. Test Verification:        {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
@@ -1194,7 +1428,7 @@ if __name__ == '__main__':
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
-    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  7. Test Verification:        {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
@@ -1231,7 +1465,7 @@ if __name__ == '__main__':
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
-    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  7. Test Verification:        {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
@@ -1270,7 +1504,7 @@ if __name__ == '__main__':
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h) [with infra]")
-    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  7. Test Verification:        {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Total (calculated):          {workflow['total_hours']:.2f}h")
     print(f"  Total (rounded to bucket):   {workflow['total_hours_rounded']}h")
@@ -1306,7 +1540,7 @@ if __name__ == '__main__':
     print(f"  4. Testing:                  {workflow['testing']:6.1f} min ({workflow['testing']/60:.2f}h)")
     print(f"  5. Code Review & Revisions:  {workflow['code_review']:6.1f} min ({workflow['code_review']/60:.2f}h)")
     print(f"  6. Deployment to Test:       {workflow['deployment_to_test']:6.1f} min ({workflow['deployment_to_test']/60:.2f}h)")
-    print(f"  7. Verification:             {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
+    print(f"  7. Test Verification:        {workflow['verification']:6.1f} min ({workflow['verification']/60:.2f}h)")
     print(f"  8. Feedback & Iterations:    {workflow['feedback_iterations']:6.1f} min ({workflow['feedback_iterations']/60:.2f}h)")
     print(f"  {'─' * 50}")
     print(f"  Subtotal (workflow):         {workflow['total_hours']:.2f}h")

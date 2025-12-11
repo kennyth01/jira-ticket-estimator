@@ -52,7 +52,7 @@
             "scales_with_complexity": false
           },
           "verification": {
-            "label": "Verification",
+            "label": "Test Verification",
             "description": "Smoke tests, verification",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
@@ -174,7 +174,7 @@
             "scales_with_complexity": false
           },
           "verification": {
-            "label": "Verification",
+            "label": "Test Verification",
             "description": "CloudWatch monitoring, API testing",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
@@ -296,7 +296,7 @@
             "scales_with_complexity": false
           },
           "verification": {
-            "label": "Verification",
+            "label": "Test Verification",
             "description": "Cross-browser verification",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
@@ -418,7 +418,7 @@
             "scales_with_complexity": false
           },
           "verification": {
-            "label": "Verification",
+            "label": "Test Verification",
             "description": "End-to-end verification",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,
@@ -540,7 +540,7 @@
             "scales_with_complexity": false
           },
           "verification": {
-            "label": "Verification",
+            "label": "Test Verification",
             "description": "Device verification",
             "base_minutes_at_complexity_5": 20,
             "min_minutes": 10,

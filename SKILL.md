@@ -106,7 +106,23 @@ Scan ticket title and description for explicit time additions:
 - "manual testing required +2h"
 - "coordinate with DevOps team (30m)"
 
-These adjustments are added on top of calculated estimates.
+**Intelligent Phase Distribution:**
+
+The system analyzes the context around each time adjustment and intelligently distributes it to the appropriate workflow phase:
+
+| Adjustment Context | Destination Phase | Example |
+|-------------------|------------------|---------|
+| QA, manual testing, smoke test, verification | **Verification** (Phase 7) | "QA self run (+2h)" |
+| Unit test, integration test, test coverage | **Testing** (Phase 4) | "write unit tests (+1h)" |
+| Code review, peer review, PR review | **Code Review** (Phase 5) | "security review (+45m)" |
+| Self review | **Self Review** (Phase 3) | "self review (+30m)" |
+| Planning, design, architecture | **Planning & Design** (Phase 1) | "architecture planning (+1h)" |
+| Implementation, coding, development | **Implementation** (Phase 2) | "additional coding (+2h)" |
+| Deployment, deploy | **Deployment** (Phase 6) | "deployment steps (+30m)" |
+| Feedback, iteration, refinement | **Feedback & Iterations** (Phase 8) | "incorporate feedback (+1h)" |
+| **Unmatched** (coordination, meetings, etc.) | **Phase 9: Overhead Activities** | "coordinate with DevOps (+1h)" |
+
+**Phase 9 only appears if there are unmatched adjustments** that don't fit into any of the standard workflow phases.
 
 ### 5. Score Complexity Factors
 
@@ -237,7 +253,7 @@ Format output as markdown table:
 | 4. Testing | X min | <percentage>% of implementation |
 | 5. Code Review & Revisions | X min | <description> |
 | 6. Deployment to Test | X min | Deploy to test environment |
-| 7. Verification | X min | Smoke tests, verification (scales with complexity) |
+| 7. Test Verification | X min | Smoke tests, verification (scales with complexity) |
 | 8. Feedback & Iterations | X min | Incorporate stakeholder feedback, iterate on changes |
 | **9. Overhead Activities** | **X min** | **+Xh from title, +Xm from description** (if detected) |
 | **TOTAL (calculated)** | **X.XXh** | |
@@ -304,35 +320,35 @@ Five project types with customized workflow phases:
 - Planning: 90 min @ complexity 5
 - Testing: 40% of implementation
 - Deployment to Test: 25 min (50 min with infra)
-- Verification: 20 min @ complexity 5 (scales with complexity)
+- Test Verification: 20 min @ complexity 5 (scales with complexity)
 - Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Serverless (AWS Lambda, Cloud Functions)
 - Planning: 120 min @ complexity 5 (more for IaC)
 - Testing: 35% of implementation
 - Deployment to Test: 25 min (60 min with infra)
-- Verification: 20 min @ complexity 5 (scales with complexity)
+- Test Verification: 20 min @ complexity 5 (scales with complexity)
 - Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Frontend (React, Vue, Angular)
 - Planning: 75 min @ complexity 5
 - Testing: 45% of implementation (includes E2E)
 - Deployment to Test: 25 min (35 min with infra)
-- Verification: 20 min @ complexity 5 (scales with complexity)
+- Test Verification: 20 min @ complexity 5 (scales with complexity)
 - Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Full-Stack (Backend + Frontend)
 - Planning: 120 min @ complexity 5
 - Testing: 50% of implementation (most comprehensive)
 - Deployment to Test: 25 min (60 min with infra)
-- Verification: 20 min @ complexity 5 (scales with complexity)
+- Test Verification: 20 min @ complexity 5 (scales with complexity)
 - Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Mobile (Android, iOS, React Native, Flutter)
 - Planning: 100 min @ complexity 5 (screen flows, offline support)
 - Testing: 50% of implementation (device testing critical)
 - Deployment to Test: 25 min (40 min with infra) - TestFlight/Internal Testing
-- Verification: 20 min @ complexity 5 (scales with complexity)
+- Test Verification: 20 min @ complexity 5 (scales with complexity)
 - Feedback & Iterations: 30 min @ complexity 5 (scales with complexity)
 
 ### Test Automation (Serenity BDD, Playwright, Cypress)
@@ -349,7 +365,7 @@ Five project types with customized workflow phases:
 
 All phase times scale with complexity. See `references/workflow-formulas.md` for complete formulas.
 
-## The 9-Phase Manual Workflow
+## The 8-9 Phase Manual Workflow
 
 Estimates follow real development phases:
 
@@ -359,13 +375,19 @@ Estimates follow real development phases:
 4. **Testing** - Unit, integration, E2E tests
 5. **Code Review & Revisions** - Peer review, addressing feedback
 6. **Deployment to Test** - Deploy to test environment (fixed time, infra-aware)
-7. **Verification** - Smoke tests, verification (scales with complexity)
+7. **Test Verification** - Smoke tests, verification (scales with complexity)
 8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on changes, address edge cases found in verification
-9. **Overhead Activities** - Additional time specified in ticket (optional, only if detected)
+9. **Overhead Activities** - Unmatched overhead from ticket (optional, only if detected)
 
-**Note**: Phase 9 only appears if overhead activities like `(+4h)` or `+30m` are detected in the ticket title or description.
+**Intelligent Adjustment Distribution**:
+When time adjustments like `(+4h)` are detected, they're intelligently distributed to the appropriate phase based on context:
+- "QA self run (+2h)" → **Test Verification** phase
+- "Code review with security team (+45m)" → **Code Review & Revisions** phase
+- "Coordinate with DevOps (+1h)" → **Phase 9** (unmatched overhead)
 
-## The 9-Phase AI-Assisted Workflow
+**Phase 9 only appears if there are unmatched adjustments** that don't fit into standard workflow phases (e.g., coordination, meetings, external dependencies).
+
+## The 8-9 Phase AI-Assisted Workflow
 
 AI-assisted development follows these phases:
 
@@ -377,9 +399,12 @@ AI-assisted development follows these phases:
 6. **Deploy to Test** - Deploy to test environment
 7. **Test Verification** - Smoke tests, E2E verification, validation
 8. **Feedback & Iterations** - Incorporate stakeholder feedback, iterate on AI-generated changes, refine based on verification
-9. **Overhead Activities** - Additional time specified in ticket (optional, only if detected)
+9. **Overhead Activities** - Unmatched overhead from ticket (optional, only if detected)
 
-**Note**: Phase 9 applies to both workflows. Overhead activities are the same for manual and AI-assisted development. Only the core workflow phases (1-8) benefit from AI acceleration.
+**Intelligent Adjustment Distribution**:
+Same intelligent distribution logic applies to AI-assisted workflow. Adjustments are added to their appropriate phases based on context.
+
+**Note**: Overhead activities (Phase 9) are the same for manual and AI-assisted development. Only the core workflow phases (1-8) benefit from AI acceleration.
 
 Typical time savings: 40-50% compared to manual development.
 
