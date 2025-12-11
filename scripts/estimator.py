@@ -1128,7 +1128,8 @@ class TicketEstimator:
                        task_type_override: str = None,
                        team_velocity: float = None,
                        has_infrastructure_changes: bool = None,
-                       file_count: int = None) -> Dict:
+                       file_count: int = None,
+                       manual_adjustments: List[Dict] = None) -> Dict:
         """
         Complete estimation for a ticket.
 
@@ -1146,6 +1147,15 @@ class TicketEstimator:
                        Count files from Grep/Glob searches during reconnaissance.
                        Adds 5 min/file overhead to manual workflow (20 file minimum).
                        Forgetting this parameter can underestimate by 2-5 hours for large refactors!
+            manual_adjustments: Optional list of manual time adjustments. If provided, overrides
+                              automatic detection from title/description. Each dict should have:
+                              - 'context': str - Description of what the adjustment is for
+                              - 'hours': float - Hours to add
+                              - 'phase': str - Target phase (verification, testing, code_review,
+                                               self_review, planning_design, implementation,
+                                               deployment_to_test, feedback_iterations, or overhead)
+                              Example: [{"context": "Manual testing", "hours": 2.0, "phase": "verification"}]
+                              If None, adjustments are auto-detected from title/description patterns.
 
         Returns:
             Complete estimation breakdown including:
@@ -1217,14 +1227,42 @@ class TicketEstimator:
             manual_workflow['phases'][impl_phase_key]['time_minutes'] += file_touch_overhead['overhead_minutes']
             manual_workflow['phases'][impl_phase_key]['file_touch_overhead'] = file_touch_overhead
 
-        # Detect manual time adjustments
-        manual_adjustments = self.detect_manual_time_adjustments(title, description)
+        # Detect or use manual time adjustments
+        if manual_adjustments is not None:
+            # User provided adjustments explicitly - use them
+            total_minutes = sum(adj['hours'] * 60 for adj in manual_adjustments)
+            formatted_adjustments = []
+            for adj in manual_adjustments:
+                formatted_adjustments.append({
+                    'value': adj['hours'],
+                    'unit': 'hours',
+                    'hours': adj['hours'],
+                    'minutes': adj['hours'] * 60,
+                    'source': 'manual_parameter',
+                    'pattern': 'Provided as parameter',
+                    'context': adj['context'],
+                    'matched_text': f"+{adj['hours']}h",
+                    'position': None,
+                    'target_phase': adj.get('phase', 'overhead')  # Default to overhead if not specified
+                })
+
+            manual_adjustments_result = {
+                'enabled': True,
+                'total_hours': total_minutes / 60.0,
+                'total_minutes': total_minutes,
+                'adjustments': formatted_adjustments,
+                'count': len(formatted_adjustments),
+                'source': 'parameter'
+            }
+        else:
+            # No explicit adjustments - detect from title/description (existing behavior)
+            manual_adjustments_result = self.detect_manual_time_adjustments(title, description)
 
         # Distribute adjustments to appropriate phases
-        if manual_adjustments['total_minutes'] > 0:
+        if manual_adjustments_result['total_minutes'] > 0:
             manual_workflow, unmatched_adjustments = self.distribute_adjustments_to_phases(
                 workflow=manual_workflow,
-                adjustments=manual_adjustments['adjustments'],
+                adjustments=manual_adjustments_result['adjustments'],
                 title=title,
                 description=description,
                 project_type=project_type
@@ -1256,7 +1294,7 @@ class TicketEstimator:
                 manual_workflow['total_hours'] = round(manual_workflow['total_minutes'] / 60.0, 2)
 
             # Track all adjustments
-            manual_workflow['manual_adjustments_total'] = round(manual_adjustments['total_minutes'], 1)
+            manual_workflow['manual_adjustments_total'] = round(manual_adjustments_result['total_minutes'], 1)
 
         # Apply bucket rounding to manual workflow total (now includes Phase 9)
         rounded_hours, rounding_threshold = self.apply_bucket_rounding(manual_workflow['total_hours'])
@@ -1272,10 +1310,10 @@ class TicketEstimator:
         )
 
         # Distribute adjustments to AI-assisted workflow (same logic as manual)
-        if manual_adjustments['total_minutes'] > 0:
+        if manual_adjustments_result['total_minutes'] > 0:
             ai_assisted_workflow, ai_unmatched_adjustments = self.distribute_adjustments_to_phases(
                 workflow=ai_assisted_workflow,
-                adjustments=manual_adjustments['adjustments'],
+                adjustments=manual_adjustments_result['adjustments'],
                 title=title,
                 description=description,
                 project_type=project_type
@@ -1307,7 +1345,7 @@ class TicketEstimator:
                 ai_assisted_workflow['total_hours'] = round(ai_assisted_workflow['total_minutes'] / 60.0, 2)
 
             # Track all adjustments
-            ai_assisted_workflow['manual_adjustments_total'] = round(manual_adjustments['total_minutes'], 1)
+            ai_assisted_workflow['manual_adjustments_total'] = round(manual_adjustments_result['total_minutes'], 1)
 
         # Apply bucket rounding to AI-assisted workflow total (now includes Phase 9)
         ai_rounded_hours, ai_rounding_threshold = self.apply_bucket_rounding(ai_assisted_workflow['total_hours'])
@@ -1345,7 +1383,7 @@ class TicketEstimator:
                 'manual_total': manual_workflow['total_hours'],
                 'ai_assisted_total': ai_assisted_workflow['total_hours']
             },
-            'manual_time_adjustments': manual_adjustments,
+            'manual_time_adjustments': manual_adjustments_result,
             'team_velocity': team_velocity,
             'has_infrastructure_changes': has_infrastructure_changes
         }

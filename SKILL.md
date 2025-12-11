@@ -168,9 +168,11 @@ from scripts.estimator import TicketEstimator
 import json
 
 estimator = TicketEstimator('heuristics.json')
+
+# Option 1: Auto-detect manual adjustments from title/description
 result = estimator.estimate_ticket(
     title="<ticket_title>",
-    description="<ticket_description>",
+    description="Manual testing required (+2h)",  # Auto-detected
     project_type="<project_type>",
     issue_type="<issue_type>",
     complexity_scores={
@@ -184,10 +186,44 @@ result = estimator.estimate_ticket(
     file_count=<counted_files>  # IMPORTANT: Pass file count from reconnaissance
 )
 
+# Option 2: Explicitly pass manual adjustments (overrides auto-detection)
+manual_adjustments = [
+    {"context": "Manual testing", "hours": 2.0, "phase": "verification"},
+    {"context": "QA coordination", "hours": 1.5, "phase": "verification"},
+    {"context": "Extra planning", "hours": 1.0, "phase": "planning_design"}
+]
+
+result = estimator.estimate_ticket(
+    title="<ticket_title>",
+    description="<ticket_description>",
+    project_type="<project_type>",
+    issue_type="<issue_type>",
+    complexity_scores={...},
+    has_infrastructure_changes=<bool>,
+    file_count=<counted_files>,
+    manual_adjustments=manual_adjustments  # Explicit adjustments (NEW!)
+)
+
 print(json.dumps(result, indent=2))
 ```
 
-Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected manual time adjustments.
+**Manual Adjustments - Two Methods**:
+
+1. **Auto-detection** (default): Include patterns like `(+2h)`, `+2h`, `(2h)` in title/description
+2. **Explicit parameter** (new): Pass `manual_adjustments` list with context, hours, and target phase
+
+Valid phases for adjustments:
+- `verification` - Test verification phase
+- `testing` - Testing phase
+- `code_review` - Code review & revisions phase
+- `self_review` - Self review phase
+- `planning_design` - Planning & design phase
+- `implementation` - Implementation phase
+- `deployment_to_test` - Deployment phase
+- `feedback_iterations` - Feedback & iterations phase
+- `overhead` - Unmatched overhead (creates Phase 9)
+
+Script outputs JSON with complete estimate breakdown including both manual and AI-assisted workflows, plus detected/explicit manual time adjustments.
 
 ### 7. Parse and Format Results
 
